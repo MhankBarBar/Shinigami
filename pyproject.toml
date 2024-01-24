@@ -1,14 +1,20 @@
 [tool.poetry]
-name = "wbot"
-version = "0.1.0"
+name = "shinigami"
+version = "0.0.1"
 description = "WhatsApp Bot"
 authors = ["MhankBarBar <mhankbarbar@pm.me>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
+neonize = "^0.0.3"
+python-magic-bin = "^0.4.14"
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry.scripts]
+shinigami = "Shinigami.main:start"
