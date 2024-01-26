@@ -1,5 +1,5 @@
 from typing import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from neonize.proto.Neonize_pb2 import JID
 from neonize.utils.jid import Jid2String, JIDToNonAD
@@ -31,6 +31,7 @@ class Message:
     is_group: bool
     is_edit: bool
     quoted_message: Callable
+    get_mention: Callable
     media_type: str = None
 
 
@@ -43,10 +44,10 @@ class SimplifiedMessage:
     def simplified(self) -> Message:
         info = self.message.Info
         return Message(
-            self.__jid_to_string(info.MessageSource.Chat),
+            self.jid_to_string(info.MessageSource.Chat),
             info.Pushname,
             self.extract_text(),
-            self.__jid_to_string(info.MessageSource.Sender),
+            self.jid_to_string(info.MessageSource.Sender),
             info.Timestamp,
             info.ID,
             info.Type,
@@ -54,10 +55,12 @@ class SimplifiedMessage:
             info.MessageSource.IsGroup,
             self.message.IsEdit,
             self.extract_quoted_message,
+            self.__extract_mention,
             info.MediaType if info.Type == "media" else None,
         )
 
-    def __jid_to_string(self, jid):
+    @staticmethod
+    def jid_to_string(jid):
         return Jid2String(JIDToNonAD(jid))
 
     @staticmethod
@@ -121,7 +124,7 @@ class SimplifiedMessage:
                     text_or_cap,
                     cont_info.participant,
                     cont_info.stanzaId,
-                    _type,
+                    "media" if _type != "text" and _type is not None else "text",
                     _type is not None and _type != "text",
                     _type,
                     raw_message=qmsg
@@ -154,3 +157,30 @@ class SimplifiedMessage:
                     self.message.Message.stickerMessage
                 )
         return None
+
+    def __extract_mention(self) -> list[str]:
+        smsg = self.simplified()
+        mentions = []
+        if smsg.message_type == "text":
+            if self.message.Message.HasField("extendedTextMessage"):
+                if not self.message.Message.extendedTextMessage.HasField("contextInfo"):
+                    return mentions
+                if x := getattr(self.message.Message.extendedTextMessage.contextInfo, "mentionedJid", []):
+                    mentions = x
+        elif smsg.message_type == "media" and smsg.media_type != "sticker":
+            if self.message.Message.HasField("imageMessage"):
+                if not self.message.Message.imageMessage.HasField("contextInfo"):
+                    return mentions
+                if x := getattr(self.message.Message.imageMessage.contextInfo, "mentionedJid", []):
+                    mentions = x
+            elif self.message.Message.HasField("videoMessage"):
+                if not self.message.Message.videoMessage.HasField("contextInfo"):
+                    return mentions
+                if x := getattr(self.message.Message.videoMessage.contextInfo, "mentionedJid", []):
+                    mentions = x
+            elif self.message.Message.HasField("documentMessage"):
+                if not self.message.Message.documentMessage.HasField("contextInfo"):
+                    return mentions
+                if x := getattr(self.message.Message.documentMessage.contextInfo, "mentionedJid", []):
+                    mentions = x
+        return mentions

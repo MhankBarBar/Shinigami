@@ -7,7 +7,7 @@ class Sticker(BaseCommand):
     alias = ["s", "stiker"]
 
     @staticmethod
-    def callback(**opts):
+    def call(**opts):
         c = opts.get("c")
         m = opts.get("m")
         sm = opts.get("sm")

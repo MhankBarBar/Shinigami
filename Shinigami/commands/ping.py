@@ -6,7 +6,7 @@ class Ping(BaseCommand):
     command = "ping"
 
     @staticmethod
-    def callback(**opts):
+    def call(**opts):
         opts.get("c").reply_message(
             SimplifiedMessage.string_to_jid(
                 opts.get("sm").chat,

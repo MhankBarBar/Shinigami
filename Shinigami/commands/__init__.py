@@ -1,7 +1,7 @@
 import os
 import re
 import string
-from abc import ABC, abstractmethod
+from abc import ABC
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -13,29 +13,35 @@ class BaseCommand(ABC):
     help: str
     alias: list = field(default_factory=list)
 
-    @abstractmethod
-    def callback(self):
-        ...
-
 
 class CommandHandler:
     def __init__(self):
         self.command_pattern = re.compile(r'^([{}])\w+'.format(re.escape(string.punctuation)))
-        self.commands = {}
+        self.commands = []
 
     def add_command(self, command):
-        self.commands[command.command] = command
-        if getattr(command, "alias", None):
-            for alias in command.alias:
-                self.commands[alias] = command
+        # self.commands[command.command] = command
+        # if getattr(command, "alias", None):
+        #     for alias in command.alias:
+        #         self.commands[alias] = command
+        self.commands.append(command)
 
     def handle_command(self, message, **opts):
-        match = self.command_pattern.match(message)
-        if match:
-            command_name = match.group().lstrip(string.punctuation)
-            if command_name in self.commands:
-                command = self.commands[command_name]
-                command.callback(**opts)
+        for command in self.commands:
+            if hasattr(command, "execute"):
+                command.execute(**opts)
+            else:
+                match = self.command_pattern.match(message)
+                if match:
+                    command_name = match.group().lstrip(string.punctuation)
+                    if (
+                        hasattr(command, "alias") and command_name in command.alias
+                        or hasattr(command, "command") and command_name == command.command
+                    ):
+                        command.call(**opts)
+            # if command_name in self.commands:
+            #     command = self.commands[command_name]
+            #     command.callback(**opts)
 
     # def match_command(self, message, command_pattern) -> bool:
     #     match = re.match(fr"^{re.escape(string.punctuation)}{command_pattern}$", message, re.IGNORECASE)
