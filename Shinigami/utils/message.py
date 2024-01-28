@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Callable
 
+from neonize.client import NewClient
 from neonize.proto import Neonize_pb2
 from neonize.utils.jid import Jid2String, JIDToNonAD
 
@@ -32,12 +33,13 @@ class Message:
     is_edit: bool
     quoted_message: Callable
     get_mention: Callable
+    raw_message: Neonize_pb2.Message
     media_type: str = None
 
 
 class SimplifiedMessage:
 
-    def __init__(self, c, message):
+    def __init__(self, c: NewClient, message: Neonize_pb2.Message):
         self.c = c
         self.message = message
 
@@ -57,6 +59,7 @@ class SimplifiedMessage:
             quoted_message=self.extract_quoted_message,
             get_mention=self.__extract_mention,
             media_type=info.MediaType if info.Type == "media" else None,
+            raw_message=self.message.Message
         )
 
     @staticmethod
@@ -76,61 +79,69 @@ class SimplifiedMessage:
 
     def extract_text(self) -> str:
         message_type = self.message.Info.Type
-        media_type = self.message.Info.MediaType if message_type == "media" else None
-        text = ""
+        media_type = (self.message.Info.MediaType if message_type == "media" else None)
         if message_type == "text":
-            text = (
-                    self.message.Message.conversation
-                    or self.message.Message.extendedTextMessage.text
-                    or ""
+            return (
+                self.message.Message.conversation
+                or self.message.Message.extendedTextMessage.text
+                or ""
             )
+        elif message_type == "poll":
+            if self.message.Message.HasField("pollCreationMessage"):
+                return self.message.Message.pollCreationMessage.name
         elif message_type == "media" and media_type != "sticker":
             match media_type:
                 case "image":
-                    text = self.message.Message.imageMessage.caption
+                    return self.message.Message.imageMessage.caption
                 case "video":
-                    text = self.message.Message.videoMessage.caption
+                    return self.message.Message.videoMessage.caption
                 case "document":
-                    text = self.message.Message.documentMessage.caption
-        return text
+                    return self.message.Message.documentMessage.caption
+        return ""
 
     def __extract_quoted_from_context_info(self, msg):
-        if msg.HasField("contextInfo"):
-            cont_info = msg.contextInfo
-            if cont_info.HasField("quotedMessage"):
-                qmsg = cont_info.quotedMessage
-                _type = None
-                text_or_cap = None
-                pushname = None
-                if f := self.c.contact.get_contact(self.string_to_jid(cont_info.participant)):
-                    pushname = f.PushName if f.Found else None
-                if qmsg.HasField("extendedTextMessage") or qmsg.HasField("conversation"):
-                    _type = "text"
-                    text_or_cap = qmsg.conversation or qmsg.extendedTextMessage.text
-                elif qmsg.HasField("imageMessage"):
-                    _type = "image"
-                    text_or_cap = qmsg.imageMessage.caption
-                elif qmsg.HasField("videoMessage"):
-                    _type = "video"
-                    text_or_cap = qmsg.videoMessage.caption
-                elif qmsg.HasField("documentMessage"):
-                    _type = "document"
-                    text_or_cap = qmsg.documentMessage.caption
-                elif qmsg.HasField("stickerMessage"):
-                    _type = "sticker"
-                return QuotedMessage(
-                    chat=cont_info.participant,
-                    pushname=pushname,
-                    message=text_or_cap,
-                    sender=cont_info.participant,
-                    message_id=cont_info.stanzaId,
-                    message_type=_type,
-                    is_media=_type is not None and _type != "text",
-                    media_type=_type,
-                    raw_message=qmsg
-                )
-        else:
+        if not msg.HasField("contextInfo"):
             return None
+        cont_info = msg.contextInfo
+        if not cont_info.HasField("quotedMessage"):
+            return None
+        qmsg = (
+            cont_info.quotedMessage.viewOnceMessage.message
+            if cont_info.quotedMessage.HasField("viewOnceMessage")
+            else cont_info.quotedMessage
+        )
+        _type, text_or_cap, pushname = None, None, None
+        if contact := self.c.contact.get_contact(
+            self.string_to_jid(cont_info.participant)
+        ):
+            pushname = contact.PushName
+        if qmsg.HasField("extendedTextMessage") or qmsg.HasField("conversation"):
+            _type, text_or_cap = "text", qmsg.conversation or qmsg.extendedTextMessage.text
+        elif qmsg.HasField("imageMessage"):
+            _type, text_or_cap = "image", qmsg.imageMessage.caption
+        elif qmsg.HasField("videoMessage"):
+            _type, text_or_cap = "video", qmsg.videoMessage.caption
+        elif qmsg.HasField("documentMessage"):
+            _type, text_or_cap = "document", qmsg.documentMessage.caption
+        elif qmsg.HasField("liveLocationMessage"):
+            _type, text_or_cap = "livelocation", qmsg.liveLocationMessage.caption
+        elif qmsg.HasField("locationMessage"):
+            _type = "location"
+        elif qmsg.HasField("stickerMessage"):
+            _type = "sticker"
+        elif qmsg.HasField("audioMessage"):
+            _type = "audio"
+        return QuotedMessage(
+            chat=cont_info.participant,
+            pushname=pushname,
+            message=text_or_cap,
+            sender=cont_info.participant,
+            message_id=cont_info.stanzaId,
+            message_type=_type,
+            is_media=_type not in ("text", "location", "livelocation"),
+            media_type=_type,
+            raw_message=qmsg
+        )
 
     def extract_quoted_message(self) -> QuotedMessage | None:
         smsg = self.simplified()
@@ -156,35 +167,36 @@ class SimplifiedMessage:
                 return self.__extract_quoted_from_context_info(
                     self.message.Message.stickerMessage
                 )
-            else:
-                return None
+            elif self.message.Message.HasField("audioMessage"):
+                return self.__extract_quoted_from_context_info(
+                    self.message.Message.audioMessage
+                )
+            elif self.message.Message.HasField("locationMessage"):
+                return self.__extract_quoted_from_context_info(
+                    self.message.Message.locationMessage
+                )
+            elif self.message.Message.HasField("liveLocationMessage"):
+                return self.__extract_quoted_from_context_info(
+                    self.message.Message.liveLocationMessage
+                )
         return None
 
     def __extract_mention(self) -> list[str]:
         smsg = self.simplified()
+        msg = self.message.Message
         mentions = []
         if smsg.message_type == "text":
-            if self.message.Message.HasField("extendedTextMessage"):
-                if not self.message.Message.extendedTextMessage.HasField("contextInfo"):
-                    return mentions
-                if x := getattr(self.message.Message.extendedTextMessage.contextInfo, "mentionedJid", []):
-                    mentions = x
-        elif smsg.message_type == "media" and smsg.media_type != "sticker":
-            if self.message.Message.HasField("imageMessage"):
-                if not self.message.Message.imageMessage.HasField("contextInfo"):
-                    return mentions
-                if x := getattr(self.message.Message.imageMessage.contextInfo, "mentionedJid", []):
-                    mentions = x
-            elif self.message.Message.HasField("videoMessage"):
-                if not self.message.Message.videoMessage.HasField("contextInfo"):
-                    return mentions
-                if x := getattr(self.message.Message.videoMessage.contextInfo, "mentionedJid", []):
-                    mentions = x
-            elif self.message.Message.HasField("documentMessage"):
-                if not self.message.Message.documentMessage.HasField("contextInfo"):
-                    return mentions
-                if x := getattr(self.message.Message.documentMessage.contextInfo, "mentionedJid", []):
-                    mentions = x
+            if msg.HasField("extendedTextMessage") and msg.extendedTextMessage.HasField("contextInfo"):
+                mentions = getattr(msg.extendedTextMessage.contextInfo, "mentionedJid", [])
+        elif smsg.message_type == "media" and smsg.media_type not in ("sticker", "location"):
+            if msg.HasField("imageMessage") and msg.imageMessage.HasField("contextInfo"):
+                mentions = getattr(msg.imageMessage.contextInfo, "mentionedJid", [])
+            elif msg.HasField("videoMessage") and msg.videoMessage.HasField("contextInfo"):
+                mentions = getattr(msg.videoMessage.contextInfo, "mentionedJid", [])
+            elif msg.HasField("documentMessage") and msg.documentMessage.HasField("contextInfo"):
+                mentions = getattr(msg.documentMessage.contextInfo, "mentionedJid", [])
+            elif msg.HasField("liveLocationMessage") and msg.liveLocationMessage.HasField("contextInfo"):
+                mentions = getattr(msg.liveLocationMessage.contextInfo, "mentionedJid", [])
         return mentions
 
 

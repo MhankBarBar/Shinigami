@@ -1,5 +1,4 @@
 import logging
-import pickle
 import signal
 from datetime import datetime
 
@@ -9,8 +8,8 @@ from neonize.proto.def_pb2 import DeviceProps
 from neonize.utils import log
 
 from Shinigami.commands import CommandHandler, CommandLoader
-from Shinigami.utils.message import SimplifiedMessage
 from Shinigami.config import SESSION_NAME
+from Shinigami.utils.message import SimplifiedMessage  # HistoryMessage
 
 command_handler = CommandHandler()
 CommandLoader.load_commands(command_handler)
@@ -39,8 +38,7 @@ def on_receipt(_: NewClient, receipt: ReceiptEv):
 @client.event(HistorySyncEv)
 def on_history_sync(_: NewClient, history_sync: HistorySyncEv):
     log.debug(f"HistorySync: {history_sync}")
-    # with open("history.pickle", "wb") as f:
-    #     pickle.dump(history_sync, f)
+    # HistoryMessage(history_sync)
 
 
 @client.event(MessageEv)
@@ -51,6 +49,7 @@ def on_message(c: NewClient, message: MessageEv):
     if smsg.chat == "status@broadcast":
         return
     time = datetime.fromtimestamp(int(str(smsg.timestamp)[:-3])).strftime("%Y-%m-%d %H:%M:%S")
+    print(message)
     print(f"{time} - Message from {smsg.pushname} : {smsg.message} - {smsg.message_type}")
     command_handler.handle_command(
         smsg.message,
