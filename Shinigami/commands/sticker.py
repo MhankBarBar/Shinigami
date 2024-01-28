@@ -14,7 +14,7 @@ class Sticker(BaseCommand):
 
         if message.message_type == "text" or message.is_media and media_type in ("image", "video"):
             media_message = x if (x := message.quoted_message()) else message
-            if media_message.raw_message.videoMessage.seconds > 10:
+            if media_message.media_type == "video" and media_message.raw_message.videoMessage.seconds > 10:
                 opts.get("c").reply_message("video too long", opts.get("m"))
                 return
             if media_message.is_media and media_message.media_type in ("image", "video"):
