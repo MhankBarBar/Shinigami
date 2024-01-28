@@ -1,7 +1,7 @@
+from dataclasses import dataclass
 from typing import Callable
-from dataclasses import dataclass, field
 
-from neonize.proto.Neonize_pb2 import JID
+from neonize.proto import Neonize_pb2
 from neonize.utils.jid import Jid2String, JIDToNonAD
 
 
@@ -44,19 +44,19 @@ class SimplifiedMessage:
     def simplified(self) -> Message:
         info = self.message.Info
         return Message(
-            self.jid_to_string(info.MessageSource.Chat),
-            info.Pushname,
-            self.extract_text(),
-            self.jid_to_string(info.MessageSource.Sender),
-            info.Timestamp,
-            info.ID,
-            info.Type,
-            info.Type == "media",
-            info.MessageSource.IsGroup,
-            self.message.IsEdit,
-            self.extract_quoted_message,
-            self.__extract_mention,
-            info.MediaType if info.Type == "media" else None,
+            chat=self.jid_to_string(info.MessageSource.Chat),
+            pushname=info.Pushname,
+            message=self.extract_text(),
+            sender=self.jid_to_string(info.MessageSource.Sender),
+            timestamp=info.Timestamp,
+            message_id=info.ID,
+            message_type=info.Type,
+            is_media=info.Type == "media",
+            is_group=info.MessageSource.IsGroup,
+            is_edit=self.message.IsEdit,
+            quoted_message=self.extract_quoted_message,
+            get_mention=self.__extract_mention,
+            media_type=info.MediaType if info.Type == "media" else None,
         )
 
     @staticmethod
@@ -64,8 +64,8 @@ class SimplifiedMessage:
         return Jid2String(JIDToNonAD(jid))
 
     @staticmethod
-    def string_to_jid(jid) -> JID:
-        return JID(
+    def string_to_jid(jid) -> Neonize_pb2.JID:
+        return Neonize_pb2.JID(
             User=jid.split("@")[0],
             Server=jid.split("@")[1],
             RawAgent=0,
@@ -94,7 +94,7 @@ class SimplifiedMessage:
                     text = self.message.Message.documentMessage.caption
         return text
 
-    def __extract_quoted_from_context_info(self, msg) -> QuotedMessage | None:
+    def __extract_quoted_from_context_info(self, msg):
         if msg.HasField("contextInfo"):
             cont_info = msg.contextInfo
             if cont_info.HasField("quotedMessage"):
@@ -119,20 +119,20 @@ class SimplifiedMessage:
                 elif qmsg.HasField("stickerMessage"):
                     _type = "sticker"
                 return QuotedMessage(
-                    cont_info.participant,
-                    pushname,
-                    text_or_cap,
-                    cont_info.participant,
-                    cont_info.stanzaId,
-                    "media" if _type != "text" and _type is not None else "text",
-                    _type is not None and _type != "text",
-                    _type,
+                    chat=cont_info.participant,
+                    pushname=pushname,
+                    message=text_or_cap,
+                    sender=cont_info.participant,
+                    message_id=cont_info.stanzaId,
+                    message_type=_type,
+                    is_media=_type is not None and _type != "text",
+                    media_type=_type,
                     raw_message=qmsg
                 )
-            else:
-                return None
+        else:
+            return None
 
-    def extract_quoted_message(self):
+    def extract_quoted_message(self) -> QuotedMessage | None:
         smsg = self.simplified()
         if smsg.message_type == "text":
             if self.message.Message.HasField("extendedTextMessage"):
@@ -156,6 +156,8 @@ class SimplifiedMessage:
                 return self.__extract_quoted_from_context_info(
                     self.message.Message.stickerMessage
                 )
+            else:
+                return None
         return None
 
     def __extract_mention(self) -> list[str]:
@@ -184,3 +186,19 @@ class SimplifiedMessage:
                 if x := getattr(self.message.Message.documentMessage.contextInfo, "mentionedJid", []):
                     mentions = x
         return mentions
+
+
+class HistoryMessage:
+
+    def __init__(self, history: Neonize_pb2.HistorySync):
+        self.history = history
+        self.conversations = history.Data.conversations
+        self.messages = []
+
+    def _all_messages(self):
+        for conversation in self.conversations:
+            self.messages.extend(
+                list(
+                    filter(lambda x: not x.message.messageStubType, conversation.messages)
+                )
+            )

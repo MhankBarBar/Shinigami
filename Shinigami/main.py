@@ -1,13 +1,16 @@
 import logging
+import pickle
 import signal
 from datetime import datetime
 
 from neonize.client import NewClient
 from neonize.events import ConnectedEv, MessageEv, PairStatusEv, event, ReceiptEv, HistorySyncEv
+from neonize.proto.def_pb2 import DeviceProps
 from neonize.utils import log
 
 from Shinigami.commands import CommandHandler, CommandLoader
 from Shinigami.utils.message import SimplifiedMessage
+from ..config import SESSSION_NAME
 
 command_handler = CommandHandler()
 CommandLoader.load_commands(command_handler)
@@ -20,7 +23,7 @@ def interrupted(*_):
 log.setLevel(logging.INFO)
 signal.signal(signal.SIGINT, interrupted)
 
-client = NewClient("joydazo.db")
+client = NewClient(SESSSION_NAME, DeviceProps(requireFullSync=True, os="Shinigami", platformType=DeviceProps.WEAR_OS))
 
 
 @client.event(ConnectedEv)
@@ -36,11 +39,17 @@ def on_receipt(_: NewClient, receipt: ReceiptEv):
 @client.event(HistorySyncEv)
 def on_history_sync(_: NewClient, history_sync: HistorySyncEv):
     log.debug(f"HistorySync: {history_sync}")
+    # with open("history.pickle", "wb") as f:
+    #     pickle.dump(history_sync, f)
 
 
 @client.event(MessageEv)
 def on_message(c: NewClient, message: MessageEv):
     smsg = SimplifiedMessage(c, message).simplified()
+    if message.Info.Category == "peer":
+        return
+    if smsg.chat == "status@broadcast":
+        return
     time = datetime.fromtimestamp(int(str(smsg.timestamp)[:-3])).strftime("%Y-%m-%d %H:%M:%S")
     print(f"{time} - Message from {smsg.pushname} : {smsg.message} - {smsg.message_type}")
     command_handler.handle_command(

@@ -16,7 +16,7 @@ class BaseCommand(ABC):
 
 class CommandHandler:
     def __init__(self):
-        self.command_pattern = re.compile(r'^([{}])\w+'.format(re.escape(string.punctuation)))
+        self.command_pattern = re.compile(fr"^([{re.escape(string.punctuation)}])\w+")
         self.commands = []
 
     def add_command(self, command):
