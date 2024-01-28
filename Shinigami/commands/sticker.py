@@ -11,11 +11,10 @@ class Sticker(BaseCommand):
     def call(**opts):
         message = opts.get("sm")
         media_type = message.media_type
-        video_seconds = message.videoMessage.seconds if media_type == "video" else 0
 
         if message.message_type == "text" or message.is_media and media_type in ("image", "video"):
             media_message = x if (x := message.quoted_message()) else message
-            if video_seconds > 10 or media_message.raw_message.videoMessage.seconds > 10:
+            if media_message.raw_message.videoMessage.seconds > 10:
                 opts.get("c").reply_message("video too long", opts.get("m"))
                 return
             if media_message.is_media and media_message.media_type in ("image", "video"):
