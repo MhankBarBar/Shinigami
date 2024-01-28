@@ -10,7 +10,7 @@ from neonize.utils import log
 
 from Shinigami.commands import CommandHandler, CommandLoader
 from Shinigami.utils.message import SimplifiedMessage
-from ..config import SESSSION_NAME
+from Shinigami.config import SESSION_NAME
 
 command_handler = CommandHandler()
 CommandLoader.load_commands(command_handler)
@@ -23,7 +23,7 @@ def interrupted(*_):
 log.setLevel(logging.INFO)
 signal.signal(signal.SIGINT, interrupted)
 
-client = NewClient(SESSSION_NAME, DeviceProps(requireFullSync=True, os="Shinigami", platformType=DeviceProps.WEAR_OS))
+client = NewClient(SESSION_NAME, DeviceProps(requireFullSync=True, os="Shinigami", platformType=DeviceProps.WEAR_OS))
 
 
 @client.event(ConnectedEv)
