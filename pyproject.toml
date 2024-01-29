@@ -8,7 +8,10 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.11"
 neonize = "^0.0.3"
-python-magic-bin = "^0.4.14"
+python-magic-bin = { version="^0.4.14", platform='windows'}
+textual = "^0.47.1"
+ptyprocess = "^0.7.0"
+watchfiles = "^0.21.0"
 
 
 [build-system]
