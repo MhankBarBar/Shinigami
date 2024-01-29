@@ -3,6 +3,7 @@ from typing import Callable
 
 from neonize.client import NewClient
 from neonize.proto import Neonize_pb2
+from neonize.proto.def_pb2 import Message as RawMessage
 from neonize.utils.jid import Jid2String, JIDToNonAD
 
 
@@ -10,20 +11,20 @@ from neonize.utils.jid import Jid2String, JIDToNonAD
 class QuotedMessage:
     chat: str
     pushname: str
-    message: str
+    text: str
     sender: str
     message_id: str
     message_type: str
     is_media: bool
     media_type: str
-    raw_message: any
+    raw_message: RawMessage
 
 
 @dataclass
 class Message:
     chat: str
     pushname: str
-    message: str
+    text: str
     sender: str
     timestamp: int
     message_id: str
@@ -33,7 +34,7 @@ class Message:
     is_edit: bool
     quoted_message: Callable
     get_mention: Callable
-    raw_message: Neonize_pb2.Message
+    raw_message: RawMessage
     media_type: str = None
 
 
@@ -48,12 +49,12 @@ class SimplifiedMessage:
         return Message(
             chat=self.jid_to_string(info.MessageSource.Chat),
             pushname=info.Pushname,
-            message=self.extract_text(),
+            text=self.extract_text(),
             sender=self.jid_to_string(info.MessageSource.Sender),
             timestamp=info.Timestamp,
             message_id=info.ID,
             message_type=info.Type,
-            is_media=info.Type == "media",
+            is_media=info.Type == "media" and info.MediaType not in ("location", "livelocation"),
             is_group=info.MessageSource.IsGroup,
             is_edit=self.message.IsEdit,
             quoted_message=self.extract_quoted_message,
@@ -97,6 +98,8 @@ class SimplifiedMessage:
                     return self.message.Message.videoMessage.caption
                 case "document":
                     return self.message.Message.documentMessage.caption
+                case "livelocation":
+                    return self.message.Message.liveLocationMessage.caption
         return ""
 
     def __extract_quoted_from_context_info(self, msg):
@@ -134,7 +137,7 @@ class SimplifiedMessage:
         return QuotedMessage(
             chat=cont_info.participant,
             pushname=pushname,
-            message=text_or_cap,
+            text=text_or_cap,
             sender=cont_info.participant,
             message_id=cont_info.stanzaId,
             message_type=_type,

@@ -3,9 +3,9 @@ import signal
 from datetime import datetime
 
 from neonize.client import NewClient
-from neonize.events import ConnectedEv, MessageEv, PairStatusEv, event, ReceiptEv, HistorySyncEv
+from neonize.events import ConnectedEv, MessageEv, PairStatusEv, event, ReceiptEv, HistorySyncEv, CallOfferEv
 from neonize.proto.def_pb2 import DeviceProps
-from neonize.utils import log
+from neonize.utils import log  # , enum
 
 from Shinigami.commands import CommandHandler, CommandLoader
 from Shinigami.config import SESSION_NAME
@@ -41,18 +41,22 @@ def on_history_sync(_: NewClient, history_sync: HistorySyncEv):
     # HistoryMessage(history_sync)
 
 
+@client.event(CallOfferEv)
+def on_call_offer(_: NewClient, call_offer: CallOfferEv):
+    log.debug(f"CallOffer: {call_offer}")
+    _.send_message(call_offer.basicCallMeta.callCreator, "I'm a bot and I don't accept calls")
+    # _.update_blocklist(call_offer.basicCallMeta.callCreator, enum.BlocklistAction.BLOCK)  # block contact caller
+
+
 @client.event(MessageEv)
 def on_message(c: NewClient, message: MessageEv):
     smsg = SimplifiedMessage(c, message).simplified()
-    if message.Info.Category == "peer":
-        return
-    if smsg.chat == "status@broadcast":
+    if message.Info.Category == "peer" or smsg.chat == "status@broadcast":
         return
     time = datetime.fromtimestamp(int(str(smsg.timestamp)[:-3])).strftime("%Y-%m-%d %H:%M:%S")
-    print(message)
-    print(f"{time} - Message from {smsg.pushname} : {smsg.message} - {smsg.message_type}")
+    print(f"{time} - Message from {smsg.pushname} : {smsg.text} - {smsg.message_type}")
     command_handler.handle_command(
-        smsg.message,
+        smsg.text,
         c=c,
         m=message,
         sm=smsg
