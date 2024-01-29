@@ -16,32 +16,23 @@ class BaseCommand(ABC):
 
 class CommandHandler:
     def __init__(self):
-        self.command_pattern = re.compile(r'^([{}])\w+'.format(re.escape(string.punctuation)))
+        self.command_pattern = re.compile(fr"^([{re.escape(string.punctuation)}])\w+")
         self.commands = []
 
     def add_command(self, command):
-        # self.commands[command.command] = command
-        # if getattr(command, "alias", None):
-        #     for alias in command.alias:
-        #         self.commands[alias] = command
         self.commands.append(command)
 
     def handle_command(self, message, **opts):
         for command in self.commands:
             if hasattr(command, "execute"):
                 command.execute(**opts)
-            else:
-                match = self.command_pattern.match(message)
-                if match:
-                    command_name = match.group().lstrip(string.punctuation)
-                    if (
-                        hasattr(command, "alias") and command_name in command.alias
-                        or hasattr(command, "command") and command_name == command.command
-                    ):
-                        command.call(**opts)
-            # if command_name in self.commands:
-            #     command = self.commands[command_name]
-            #     command.callback(**opts)
+            elif match := self.command_pattern.match(message):
+                command_name = match.group().lstrip(string.punctuation)
+                if (
+                    hasattr(command, "alias") and command_name in command.alias
+                    or hasattr(command, "command") and command_name == command.command
+                ):
+                    command.call(**opts)
 
     # def match_command(self, message, command_pattern) -> bool:
     #     match = re.match(fr"^{re.escape(string.punctuation)}{command_pattern}$", message, re.IGNORECASE)

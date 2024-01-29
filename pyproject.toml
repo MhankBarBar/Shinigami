@@ -6,12 +6,12 @@ authors = ["MhankBarBar <mhankbarbar@pm.me>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
-neonize = "^0.0.3"
-python-magic-bin = { version="^0.4.14", platform='windows'}
+python = ">=3.10"
 textual = "^0.47.1"
 ptyprocess = "^0.7.0"
 watchfiles = "^0.21.0"
+neonize = "^0.0.4"
+python-magic-bin = { version = "^0.4.14", markers = "platform_system == 'Windows'" }
 
 
 [build-system]

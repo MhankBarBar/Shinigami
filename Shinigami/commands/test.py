@@ -12,4 +12,4 @@ class Test(BaseCommand):
         if x := sm.get_mention():
             for i in x:
                 if i == me:
-                    c.reply_message(SimplifiedMessage.string_to_jid(opts.get("sm").chat), "Naon cuy!", opts.get("m"))
+                    c.reply_message("Naon cuy!", opts.get("m"))

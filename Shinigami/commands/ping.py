@@ -1,5 +1,4 @@
 from Shinigami.commands import BaseCommand
-from Shinigami.utils.message import SimplifiedMessage
 
 
 class Ping(BaseCommand):
@@ -8,9 +7,6 @@ class Ping(BaseCommand):
     @staticmethod
     def call(**opts):
         opts.get("c").reply_message(
-            SimplifiedMessage.string_to_jid(
-                opts.get("sm").chat,
-            ),
             "PonG!",
             opts.get("m")
         )
