@@ -3,7 +3,15 @@ import signal
 from datetime import datetime
 
 from neonize.client import NewClient
-from neonize.events import ConnectedEv, MessageEv, PairStatusEv, event, ReceiptEv, HistorySyncEv, CallOfferEv
+from neonize.events import (
+    CallOfferEv,
+    ConnectedEv,
+    HistorySyncEv,
+    MessageEv,
+    PairStatusEv,
+    ReceiptEv,
+    event,
+)
 from neonize.proto.def_pb2 import DeviceProps
 from neonize.utils import log  # , enum
 
@@ -22,7 +30,10 @@ def interrupted(*_):
 log.setLevel(logging.INFO)
 signal.signal(signal.SIGINT, interrupted)
 
-client = NewClient(SESSION_NAME, DeviceProps(requireFullSync=True, os="Shinigami", platformType=DeviceProps.WEAR_OS))
+client = NewClient(
+    SESSION_NAME,
+    DeviceProps(requireFullSync=True, os="Shinigami", platformType=DeviceProps.WEAR_OS),
+)
 
 
 @client.event(ConnectedEv)
@@ -44,7 +55,9 @@ def on_history_sync(_: NewClient, history_sync: HistorySyncEv):
 @client.event(CallOfferEv)
 def on_call_offer(_: NewClient, call_offer: CallOfferEv):
     log.debug(f"CallOffer: {call_offer}")
-    _.send_message(call_offer.basicCallMeta.callCreator, "I'm a bot and I don't accept calls")
+    _.send_message(
+        call_offer.basicCallMeta.callCreator, "I'm a bot and I don't accept calls"
+    )
     # _.update_blocklist(call_offer.basicCallMeta.callCreator, enum.BlocklistAction.BLOCK)  # block contact caller
 
 
@@ -53,14 +66,11 @@ def on_message(c: NewClient, message: MessageEv):
     smsg = SimplifiedMessage(c, message).simplified()
     if message.Info.Category == "peer" or smsg.chat == "status@broadcast":
         return
-    time = datetime.fromtimestamp(int(str(smsg.timestamp)[:-3])).strftime("%Y-%m-%d %H:%M:%S")
-    print(f"{time} - Message from {smsg.pushname} : {smsg.text} - {smsg.message_type}")
-    command_handler.handle_command(
-        smsg.text,
-        c=c,
-        m=message,
-        sm=smsg
+    time = datetime.fromtimestamp(int(str(smsg.timestamp)[:-3])).strftime(
+        "%Y-%m-%d %H:%M:%S"
     )
+    print(f"{time} - Message from {smsg.pushname} : {smsg.text} - {smsg.message_type}")
+    command_handler.handle_command(smsg.text, c=c, m=message, sm=smsg)
 
 
 @client.event(PairStatusEv)

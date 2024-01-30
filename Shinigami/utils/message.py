@@ -1,5 +1,5 @@
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 from neonize.client import NewClient
 from neonize.proto import Neonize_pb2
@@ -39,7 +39,6 @@ class Message:
 
 
 class SimplifiedMessage:
-
     def __init__(self, c: NewClient, message: Neonize_pb2.Message):
         self.c = c
         self.message = message
@@ -54,13 +53,14 @@ class SimplifiedMessage:
             timestamp=info.Timestamp,
             message_id=info.ID,
             message_type=info.Type,
-            is_media=info.Type == "media" and info.MediaType not in ("location", "livelocation"),
+            is_media=info.Type == "media"
+            and info.MediaType not in ("location", "livelocation"),
             is_group=info.MessageSource.IsGroup,
             is_edit=self.message.IsEdit,
             quoted_message=self.extract_quoted_message,
             get_mention=self.__extract_mention,
             media_type=info.MediaType if info.Type == "media" else None,
-            raw_message=self.message.Message
+            raw_message=self.message.Message,
         )
 
     @staticmethod
@@ -80,7 +80,7 @@ class SimplifiedMessage:
 
     def extract_text(self) -> str:
         message_type = self.message.Info.Type
-        media_type = (self.message.Info.MediaType if message_type == "media" else None)
+        media_type = self.message.Info.MediaType if message_type == "media" else None
         if message_type == "text":
             return (
                 self.message.Message.conversation
@@ -119,7 +119,10 @@ class SimplifiedMessage:
         ):
             pushname = contact.PushName
         if qmsg.HasField("extendedTextMessage") or qmsg.HasField("conversation"):
-            _type, text_or_cap = "text", qmsg.conversation or qmsg.extendedTextMessage.text
+            _type, text_or_cap = (
+                "text",
+                qmsg.conversation or qmsg.extendedTextMessage.text,
+            )
         elif qmsg.HasField("imageMessage"):
             _type, text_or_cap = "image", qmsg.imageMessage.caption
         elif qmsg.HasField("videoMessage"):
@@ -143,7 +146,7 @@ class SimplifiedMessage:
             message_type=_type,
             is_media=_type not in ("text", "location", "livelocation"),
             media_type=_type,
-            raw_message=qmsg
+            raw_message=qmsg,
         )
 
     def extract_quoted_message(self) -> QuotedMessage | None:
@@ -189,22 +192,38 @@ class SimplifiedMessage:
         msg = self.message.Message
         mentions = []
         if smsg.message_type == "text":
-            if msg.HasField("extendedTextMessage") and msg.extendedTextMessage.HasField("contextInfo"):
-                mentions = getattr(msg.extendedTextMessage.contextInfo, "mentionedJid", [])
-        elif smsg.message_type == "media" and smsg.media_type not in ("sticker", "location"):
-            if msg.HasField("imageMessage") and msg.imageMessage.HasField("contextInfo"):
+            if msg.HasField("extendedTextMessage") and msg.extendedTextMessage.HasField(
+                "contextInfo"
+            ):
+                mentions = getattr(
+                    msg.extendedTextMessage.contextInfo, "mentionedJid", []
+                )
+        elif smsg.message_type == "media" and smsg.media_type not in (
+            "sticker",
+            "location",
+        ):
+            if msg.HasField("imageMessage") and msg.imageMessage.HasField(
+                "contextInfo"
+            ):
                 mentions = getattr(msg.imageMessage.contextInfo, "mentionedJid", [])
-            elif msg.HasField("videoMessage") and msg.videoMessage.HasField("contextInfo"):
+            elif msg.HasField("videoMessage") and msg.videoMessage.HasField(
+                "contextInfo"
+            ):
                 mentions = getattr(msg.videoMessage.contextInfo, "mentionedJid", [])
-            elif msg.HasField("documentMessage") and msg.documentMessage.HasField("contextInfo"):
+            elif msg.HasField("documentMessage") and msg.documentMessage.HasField(
+                "contextInfo"
+            ):
                 mentions = getattr(msg.documentMessage.contextInfo, "mentionedJid", [])
-            elif msg.HasField("liveLocationMessage") and msg.liveLocationMessage.HasField("contextInfo"):
-                mentions = getattr(msg.liveLocationMessage.contextInfo, "mentionedJid", [])
+            elif msg.HasField(
+                "liveLocationMessage"
+            ) and msg.liveLocationMessage.HasField("contextInfo"):
+                mentions = getattr(
+                    msg.liveLocationMessage.contextInfo, "mentionedJid", []
+                )
         return mentions
 
 
 class HistoryMessage:
-
     def __init__(self, history: Neonize_pb2.HistorySync):
         self.history = history
         self.conversations = history.Data.conversations
@@ -214,6 +233,8 @@ class HistoryMessage:
         for conversation in self.conversations:
             self.messages.extend(
                 list(
-                    filter(lambda x: not x.message.messageStubType, conversation.messages)
+                    filter(
+                        lambda x: not x.message.messageStubType, conversation.messages
+                    )
                 )
             )

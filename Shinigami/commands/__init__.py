@@ -16,7 +16,7 @@ class BaseCommand(ABC):
 
 class CommandHandler:
     def __init__(self):
-        self.command_pattern = re.compile(fr"^([{re.escape(string.punctuation)}])\w+")
+        self.command_pattern = re.compile(rf"^([{re.escape(string.punctuation)}])\w+")
         self.commands = []
 
     def add_command(self, command):
@@ -29,8 +29,10 @@ class CommandHandler:
             elif match := self.command_pattern.match(message):
                 command_name = match.group().lstrip(string.punctuation)
                 if (
-                    hasattr(command, "alias") and command_name in command.alias
-                    or hasattr(command, "command") and command_name == command.command
+                    hasattr(command, "alias")
+                    and command_name in command.alias
+                    or hasattr(command, "command")
+                    and command_name == command.command
                 ):
                     command.call(**opts)
 
@@ -47,20 +49,20 @@ class CommandLoader:
             return
 
         for filename in path.iterdir():
-            if filename.name.endswith('.py'):
+            if filename.name.endswith(".py"):
                 module_name = filename.name[:-3]
                 if module_name == "__init__":
                     continue
                 module = getattr(
                     getattr(
-                        __import__(f'{path.parent.name}.{path.name}.{module_name}'), path.name
+                        __import__(f"{path.parent.name}.{path.name}.{module_name}"),
+                        path.name,
                     ),
-                    module_name
+                    module_name,
                 )
                 for x in dir(module):
-                    if (hasattr(
-                            getattr(module, x),
-                            '__bases__'
-                    )) and BaseCommand in getattr(module, x).__bases__:
+                    if (
+                        hasattr(getattr(module, x), "__bases__")
+                    ) and BaseCommand in getattr(module, x).__bases__:
                         cmd: BaseCommand = getattr(module, x)
                         handler.add_command(cmd)
