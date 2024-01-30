@@ -1,28 +1,42 @@
-# from rich.repr import Foo
 import asyncio
+import json
 import signal
 import os
 import struct
 from ptyprocess import PtyProcessUnicode
 from pathlib import Path
-from typing import Callable
+from typing import Dict, Optional
 from rich.text import Text
 from textual import RenderableType, work
 from textual.app import App, ComposeResult
-from textual.validation import Function
+from textual.screen import ModalScreen, Screen
 from textual.widget import Widget
-from textual.widgets import Button, Header, Footer, Input, Label, ListItem, ListView, Log, Select, Static, TabPane, TabbedContent, Tabs, Welcome, Tab
+from textual.widgets import (
+    Button,
+    Header,
+    Footer,
+    Input,
+    Label,
+    ListItem,
+    ListView,
+    Log,
+    Select,
+    Static,
+    TabPane,
+    TabbedContent,
+)
 from textual.containers import Grid, Horizontal, VerticalScroll, Vertical
 from textual.reactive import Reactive, reactive
 import watchfiles
 import os
 import re
 import socket
-WORKDIR = Path(__file__).parent
-SHINIGAMI = WORKDIR / 'Shinigami/'
 
-# 7-bit C1 ANSI sequences
-ansi_escape = re.compile(r'''
+WORKDIR = Path(__file__).parent
+SHINIGAMI = WORKDIR / "Shinigami/"
+
+ansi_escape = re.compile(
+    r"""
     \x1B  # ESC
     (?:   # 7-bit C1 Fe (except CSI)
         [@-Z\\-_]
@@ -32,7 +46,9 @@ ansi_escape = re.compile(r'''
         [ -/]*  # Intermediate bytes
         [@-~]   # Final byte
     )
-''', re.VERBOSE)
+""",
+    re.VERBOSE,
+)
 
 
 class ActionButton(Widget):
@@ -44,13 +60,16 @@ class ActionButton(Widget):
         width: 100%;
     }
     """
+
     def compose(self) -> ComposeResult:
         yield Grid(
             Button("Exit ⚠️", id="exit_button", variant="error"),
             Button("Restart 🔁", variant="warning", id="restart"),
-            Button("DEBUG: ✅", id="debug", variant="primary"),
-            name="action_button"
+            Button("DEBUG: ❌", id="debug", variant="primary"),
+            name="action_button",
         )
+
+
 class UILog(Widget):
     DEFAULT_CSS = """
     Grid {
@@ -61,13 +80,13 @@ class UILog(Widget):
         margin: 0;
     }
     """
+
     def compose(self) -> ComposeResult:
-        yield Grid(
-            Log(id="log"),
-            Log(id="status")
-        )
+        yield Grid(Log(id="log"), Log(id="status"))
+
+
 class Session(Widget):
-    BINDINGS = [('d', 'toggel_dark', "Toggle Dark Mode")]
+    BINDINGS = [("d", "toggel_dark", "Toggle Dark Mode")]
     DEFAULT_CSS = """
 ActionButton {
     dock: bottom;
@@ -77,141 +96,163 @@ ActionButton {
 
 """
     DEBUG = False
+    SESSION_FILES = Reactive([], always_update=True, layout=True)
+    switch_session = Select([], id="switch_session")
+    delete_session = Select([], id="delete_session")
+
+    @work(exclusive=True)
+    async def session_watcher(self):
+        def get_session():
+            result = []
+            for name in os.listdir(SHINIGAMI / "session"):
+                result.append((name, name))
+            self.switch_session.set_options(result)
+            self.delete_session.set_options(result)
+
+        get_session()
+        async for changes in watchfiles.awatch(SHINIGAMI / "session"):
+            for change in changes:
+                match change[0]:
+                    case watchfiles.Change.added:
+                        get_session()
+                    case watchfiles.Change.deleted:
+                        get_session()
+
+    def on_mount(self):
+        self.session_watcher()
+        # pass
+
     def compose(self) -> ComposeResult:
-        # yield Content(layout)
         with TabbedContent():
-            with TabPane("Home"):   
+            with TabPane("Home"):
                 with Vertical():
                     yield UILog()
                     yield ActionButton()
             with TabPane("Config"):
                 with VerticalScroll(id="input_group"):
-                        yield Input(placeholder="Bot Name")
-                        yield Input(placeholder="Prefix")
-                        yield Input(placeholder="Owner")
-                        yield Input(placeholder="Session Name")
-                        yield Input(placeholder="Sticker Pack")
-                        yield Button("Apply", id="apply_config", variant="success")
+                    yield Input(placeholder="Bot Name", id="bot_name")
+                    yield Input(placeholder="Prefix", id="prefix")
+                    yield Input(placeholder="Owner", id="owner")
+                    yield Input(placeholder="Session Name", id="session_name")
+                    yield Input(placeholder="Sticker Name", id="sticker_name")
+                    yield Input(placeholder="Sticker Pack", id="sticker_pack")
+                    yield Button("Apply", id="apply_config", variant="success")
             with TabPane("Session"):
                 with VerticalScroll():
                     with Horizontal(classes="select_group"):
-                        yield Select([('Shinigami','Shinigami')], name="Switch Session", allow_blank=False, prompt="Change Session")
-                        yield Button("Switch", variant="success")
+                        yield self.switch_session
+                        yield Button("Switch", variant="success", id="switch")
                     with Horizontal(classes="select_group"):
-                        yield Select([('Shinigami', 'Shinigami')], name="Switch Session", allow_blank=False, prompt="Change Session")
-                        yield Button("Delete", variant="error")
+                        yield self.delete_session
+                        yield Button(
+                            "Delete", variant="error", id="selete_session_submit"
+                        )
                     with Horizontal():
                         yield Button("Log Out", variant="error")
-        # yield Vertical(
-        # yield Footer()
-        
+
     def action_toggle_dark(self) -> None:
         self.dark = not self.dark
-        
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "exit_button":
-            alert = self.app.query_one(Alert)
-            al1=alert.query(Grid)
-            al1[0].text = "Apakah Anda yakin"
-            alert.refresh(layout=True)
-            alert.styles.visibility = "visible"
-            alert.on_yes(self.app.exit)
+            self.app.push_screen(QuitScreen())
         elif event.button.id == "debug":
             self.DEBUG = not self.DEBUG
-            # self.app.send_command("debug", int(self.DEBUG).__str__().encode())
-            event.button.label = "DEBUG: %s" % ['❌ ','✅'][self.DEBUG]
+            if self.DEBUG:
+                self.screen.watchfiles()
+            else:
+                self.screen.watch_event.set()
+            # self.app.send_command("debug", int(self.DEBUG).__str__().encode())\
+            # self.app.push_screen(QuitScreen())
+            event.button.label = "DEBUG: %s" % ["❌", "✅"][self.DEBUG]
         elif event.button.id == "restart":
             self.app.restart()
+        elif event.button.id == "switch":
+            # Not Implemented yet
+            pass
+        elif event.button.id == "apply_config":
+            self.screen.send_command(
+                "update_config",
+                {
+                    "bot_name": self.query_one("#bot_name", expect_type=Input).value,
+                    "prefix": self.query_one("#prefix", expect_type=Input).value,
+                    "owner": self.query_one("#owner", expect_type=Input).value,
+                    "session_name": self.query_one(
+                        "#session_name", expect_type=Input
+                    ).value,
+                    "sticker_name": self.query_one(
+                        "#sticker_name", expect_type=Input
+                    ).value,
+                    "sticker_pack": self.query_one(
+                        "#sticker_pack", expect_type=Input
+                    ).value,
+                },
+            )
+        elif event.button.id == "selete_session_submit":
+            os.remove(
+                SHINIGAMI
+                / (
+                    "session/"
+                    + self.query_one("#delete_session", expect_type=Select).value
+                )
+            )
         # self.query_one(Content).walawe()
 
-        # self.query_one(Log).write("hehe\na")
-class AllSession(Widget):
-    selected = Reactive("default", always_update=True)
-    def compose(self) -> ComposeResult:
-        yield SESSION[self.selected]
 
-class Message(Widget):
-    text = reactive("Are You Sure?")
-    def render(self) -> RenderableType:
-        return Text(self.text)
+class QuitScreen(ModalScreen):
+    """Screen with a dialog to quit."""
 
-class Alert(Widget):
     DEFAULT_CSS = """
-    #alert {
-        grid-size: 1 2;
-        border: heavy white;
-    }
-    #msg-alert {
-    margin-top: 1;
-    text-align: center;
-    }
     Grid > Grid {
         grid-size: 2 1;
-        align: center middle;
     }
-    """
-    def compose(self) -> ComposeResult:
-        yield Grid(
-                Message(id="msg-alert"),
-                Grid(Button("No", variant="primary", id="no"), Button("Yes", "warning", id="yes")),
-                id="alert"
-            )
-    def on_yes(self, cb: Callable):
-        self.yes = cb
-    def on_button_pressed(self, event: Button.Pressed):
-        if event.button.id == "no":
-            self.styles.visibility = "hidden"
-        elif event.button.id == "yes":
-            self.yes()
-
-
-class CreateSessionModal(Widget):
-    """
     Button {
-        align: right;
-    }
-    #confirmation {
-        background: cyan;
         width: 100%;
     }
-    Label {
-        text-align: right;
-        width: auto;
-        background: blue;
-    }
+    #dialog {
+    grid-size: 2;
+    grid-gutter: 1 2;
+    grid-rows: 1fr 3;
+    padding: 0 1;
+    width: 60;
+    height: 11;
+    border: thick $background 80%;
+    background: $surface;
+	align: center middle;
+}
+#question {
+    column-span: 2;
+    height: 1fr;
+    width: 1fr;
+    content-align: center middle;
+}
     """
+
     def compose(self) -> ComposeResult:
-        yield Label('x', id='close_label')
-        yield Input(
-            placeholder="session name",
-            validators=[
-                Function(lambda v: v not in SESSION, "session has been used")
-            ]
+        yield Grid(
+            Label("Are you sure you want to quit?", id="question"),
+            Button("Quit", variant="error", id="quit"),
+            Button("Cancel", variant="success", id="cancel"),
+            id="dialog",
         )
-        yield Horizontal(
-            Button("Cancel", id="hide_session"),
-            # Button("Submit", id="submit_session"),
-            id="confirmation"
-        )
-    def show(self):
-        self.query_one(Input).clear()
-        self.styles.visibility = "visible"
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "quit":
+            self.app.exit()
+        else:
+            self.app.pop_screen()
 
 
-    def on_button_pressed(self, event: Button.Pressed):
-        if event.button.id == "hide_session":
-            self.styles.visibility = "hidden"
+class Hit(Static):
+    hit_name: reactive[str] = reactive("", always_update=True)
+    hit_value: reactive[int] = reactive(0, always_update=True)
+
+    def render(self) -> RenderableType:
+        return Text(f"{self.hit_name}: {self.hit_value}", overflow="ignore")
 
 
-    def on_input_submitted(self, event: Input.Submitted):
-        global SESSION
-        if event.input.is_valid:
-            SESSION.update({event.input.value: Session()})
-            self.app.query_one(ListView).append(ListItem(Label(event.input.value), id=event.input.value))
-            self.styles.visibility = "hidden"
-    
-class Shinigami(App):
-    BINDINGS = [("c", "sidebar()", 'Sidebar')]
+class MyScreen(Screen):
+    BINDINGS = [("c", "sidebar()", "Sidebar")]
     DEFAULT_CSS = """
     Screen {
         layers: below belowx session;
@@ -231,13 +272,12 @@ class Shinigami(App):
         background: $boost;
         padding-left: 1;
     }
-    Alert {
+    #Alert {
         width: 40;
         background: $primary 30%; 
         layer: belowx;
-        offset: 15 15;
+        align: center middle;
         height: 10;
-        visibility: hidden;
     }
     CreateSessionModal {
         layer: session;
@@ -256,72 +296,99 @@ class Shinigami(App):
     }
     """
     DEBUG = False
+    RESTARTED: Dict[str, str | int | bool] | None = None
+
     def action_sidebar(self):
-        q=self.query_one(ListView)
+        q = self.query_one(ListView)
         if q.styles.width.value == 0:
-            q.styles.visibility="visible"
-            q.styles.animate('width', 30, duration=0.5)
+            q.styles.visibility = "visible"
+            q.styles.animate("width", 30, duration=0.5)
         else:
+
             def on_complete():
                 q.styles.visibility = "hidden"
                 self.query_one(ListView).blur()
-                # self.query_one(sel).focus()
-            q.styles.animate('width', 0, duration=0.5, on_complete=on_complete)
+
+            q.styles.animate("width", 0, duration=0.5, on_complete=on_complete)
+        self.query_one(Session).SESSION_FILES = [("a", "b")]
 
     def on_list_view_selected(self, event: ListView.Selected):
         global SELECTED
         if event.item.id == "add_session":
-            self.query_one(CreateSessionModal).show()
-            self.query_one(CreateSessionModal).query_one(Input).focus()
+            ListItem(Static(Text("yah")))
         else:
-            # self.push_screen(event.item.id.__str__())
-            # self.query_one(AllSession).selected = SESSION[event.item.id]
-            self.query_one(AllSession).refresh(layout=True)
-            self.query_one(AllSession).refresh(layout=True)
-        # self.query_one(ListView).append(ListItem(Label("Walawe")))
+            pass
 
-    @work(thread=True)
+    @work(name="shinigami server", exclusive=True, thread=True)
     def client(self, sock: socket.socket, addr):
-        log=self.query_one('#log', expect_type=Log)
-        with open('log.txt', 'w') as file:
-            while True:
-                try:
-                    rdata = sock.recv(4)
-                    command_size = struct.unpack('i',rdata)[0]
-                    file.writelines('command_size: '+command_size.__str__())
-                    command = sock.recv(command_size).decode()
-                    file.writelines('command: '+command)
-                    data_size = struct.unpack('i', sock.recv(4))[0]
-                    file.writelines('data_size: '+data_size.__str__())
-                    data = sock.recv(data_size)
-                    file.write(f'data: '+data.decode())
-                    if command == "restart":
+        log = self.query_one("#log", expect_type=Log)
+        hit = {}
+        view = self.screen.query_one("#listview_hit", expect_type=ListView)
+        if self.RESTARTED:
+            self.RESTARTED.update({"message": "Restarted!"})
+            self.send_command("send_message", self.RESTARTED)
+            self.RESTARTED = None
+        while True:
+            try:
+                rdata = sock.recv(4)
+                command_size = struct.unpack("i", rdata)[0]
+                command = sock.recv(command_size).decode()
+                data_size = struct.unpack("i", sock.recv(4))[0]
+                data = json.loads(sock.recv(data_size))
+                log.write_line(f"parent: {command}, {data}")
+                match command:
+                    case "restart":
+                        log.write_line("Restarting....")
+                        self.RESTARTED = data
                         self.pty.kill(signal.SIGKILL)
                         break
-                except Exception as e:
-                    log.write(f'Disconnected: {e} ')
-                    break
+                    case "update_config":
+                        for k, v in data.items():
+                            self.query_one(f"#{k}", expect_type=Input).value = v
+                    case "hit":
+                        name = data["name"]
+                        if hit.get(name) is None:
+                            hit[name] = 1
+                            n_hit = Hit(id="hit_" + name)
+                            n_hit.hit_name = name
+                            n_hit.hit_value = hit[name]
+                            self.app.call_from_thread(view.append, ListItem(n_hit))
+                        else:
+                            hit[name] += 1
+                            self.app.query_one(
+                                f"#hit_{name}", expect_type=Hit
+                            ).hit_value = hit[name]
 
-    def send_command(self, name: str, data: bytes= b""):
-        command_size = struct.pack('i',len(name))
+            except Exception as e:
+                log.write_line(f"Disconnected: {e} ")
+
+    def send_command(self, name: str, data: Optional[dict] = None):
+        json_data = json.dumps(data or {}).encode()
+        command_size = struct.pack("i", len(name))
         self.socks.send(command_size)
         self.socks.send(name.encode())
-        data_size = struct.pack('i', len(data))
+        data_size = struct.pack("i", len(json_data))
         self.socks.send(data_size)
-        self.socks.send(data)
+        self.socks.send(json_data)
 
     @work(exclusive=True, name="file watcher")
     async def watchfiles(self):
+        if self.watch_event.is_set():
+            self.watch_event = asyncio.Event()
+
         def file_filter(_: watchfiles.Change, filename: str):
-            return filename.endswith('.py')
-        async for _ in watchfiles.awatch(SHINIGAMI, watch_filter=file_filter, stop_event=self.watch_event):
+            return filename.endswith(".py")
+
+        async for _ in watchfiles.awatch(
+            SHINIGAMI, watch_filter=file_filter, stop_event=self.watch_event
+        ):
             self.pty.kill(signal.SIGKILL)
 
-    @work(thread=True)
+    @work(thread=True, exclusive=True)
     def server(self):
         sock_server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock_server.bind('listen.sock')
+        sock_server.bind("listen.sock")
         sock_server.listen()
         while True:
             sock, addr = sock_server.accept()
@@ -330,37 +397,58 @@ class Shinigami(App):
 
     @work(thread=True)
     def process(self):
-        self.pty = PtyProcessUnicode.spawn(['poetry', 'run', 'shiniagmi'], cwd=Path(__file__).parent)
-        log=self.query('Vertical > UILog > Grid > Log').first()
+        self.pty = PtyProcessUnicode.spawn(
+            ["python", "-m", "Shinigami.main"],
+            cwd=Path(__file__).parent,
+            env=os.environ,
+        )
+        log = self.app.query_one("#log", expect_type=Log)
         while True:
             try:
                 std = self.pty.read(1024)
-                log.write(ansi_escape.sub('', std))
+                log.write(ansi_escape.sub("", std))
             except EOFError:
-                self.pty = PtyProcessUnicode.spawn(['python', 'shell.py'])
+                self.pty = PtyProcessUnicode.spawn(
+                    ["python", "-m", "Shinigami.main"],
+                    cwd=Path(__file__).parent,
+                    env=os.environ,
+                )
+
     def restart(self):
         self.pty.kill(signal.SIGKILL)
+
     def on_mount(self):
         self.watch_event = asyncio.Event()
-        log = self.query_one("#log", expect_type=Log)
-        log.write("bjir")
         if self.DEBUG:
             self.watchfiles()
-        pass
-        # self.server()
-        # self.process()
+        self.server()
+        self.process()
+
     def compose(self) -> ComposeResult:
+        hit = Hit()
+        hit.hit_name = "krypton"
+        hit.hit_value = 100
         yield Header(True)
-        # yield Alert()
-        # yield CreateSessionModal()
-        yield ListView(ListItem(Label(r"✏️  Create Session"), id="add_session"))
+        yield ListView(id="listview_hit")
         yield Session()
         yield Footer()
 
 
+class Shinigami(App):
+    DEFAULT_CSS = """
+    
+    QuitScreen{
+        align: center middle;
+    }
+    """
 
-if __name__ == '__main__':
-    sock_file = Path(__file__).parent / 'listen.sock'
+    def on_mount(self):
+        self.install_screen(MyScreen(), "HOME")
+        self.push_screen("HOME")
+
+
+if __name__ == "__main__":
+    sock_file = Path(__file__).parent / "listen.sock"
     if sock_file.exists():
         os.remove(sock_file)
     app = Shinigami()

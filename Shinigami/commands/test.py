@@ -3,7 +3,6 @@ from Shinigami.utils.message import SimplifiedMessage
 
 
 class Test(BaseCommand):
-
     @staticmethod
     def execute(**opts):
         c = opts.get("c")
