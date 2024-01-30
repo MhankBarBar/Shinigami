@@ -1,20 +1,32 @@
 import asyncio
 import json
 import signal
-import os
 import struct
-from ptyprocess import PtyProcessUnicode
+
+from Shinigami.utils import is_windows
+
+if is_windows():
+    from winpty import PtyProcess
+else:
+    from ptyprocess import PtyProcessUnicode as PtyProcess
+import os
+import re
+import socket
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Optional
+
+import watchfiles
 from rich.text import Text
 from textual import RenderableType, work
 from textual.app import App, ComposeResult
+from textual.containers import Grid, Horizontal, Vertical, VerticalScroll
+from textual.reactive import Reactive, reactive
 from textual.screen import ModalScreen, Screen
 from textual.widget import Widget
 from textual.widgets import (
     Button,
-    Header,
     Footer,
+    Header,
     Input,
     Label,
     ListItem,
@@ -22,15 +34,9 @@ from textual.widgets import (
     Log,
     Select,
     Static,
-    TabPane,
     TabbedContent,
+    TabPane,
 )
-from textual.containers import Grid, Horizontal, VerticalScroll, Vertical
-from textual.reactive import Reactive, reactive
-import watchfiles
-import os
-import re
-import socket
 
 WORKDIR = Path(__file__).parent
 SHINIGAMI = WORKDIR / "Shinigami/"
@@ -92,7 +98,7 @@ ActionButton {
     dock: bottom;
     background: red;
     height: 3;
-} 
+}
 
 """
     DEBUG = False
@@ -274,7 +280,7 @@ class MyScreen(Screen):
     }
     #Alert {
         width: 40;
-        background: $primary 30%; 
+        background: $primary 30%;
         layer: belowx;
         align: center middle;
         height: 10;
@@ -296,7 +302,7 @@ class MyScreen(Screen):
     }
     """
     DEBUG = False
-    RESTARTED: Dict[str, str | int | bool] | None = None
+    RESTARTED: dict[str, str | int | bool] | None = None
 
     def action_sidebar(self):
         q = self.query_one(ListView)
@@ -340,7 +346,10 @@ class MyScreen(Screen):
                     case "restart":
                         log.write_line("Restarting....")
                         self.RESTARTED = data
-                        self.pty.kill(signal.SIGKILL)
+                        if is_windows():
+                            self.pty.terminate(True)
+                        else:
+                            self.pty.kill(signal.SIGKILL)
                         break
                     case "update_config":
                         for k, v in data.items():
@@ -387,9 +396,11 @@ class MyScreen(Screen):
 
     @work(thread=True, exclusive=True)
     def server(self):
-        sock_server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock_server = socket.socket(
+            socket.AF_UNIX if not is_windows() else socket.AF_INET, socket.SOCK_STREAM
+        )
         sock_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock_server.bind("listen.sock")
+        sock_server.bind(("127.0.0.1", 7657) if is_windows() else "listen.sock")
         sock_server.listen()
         while True:
             sock, addr = sock_server.accept()
@@ -398,9 +409,9 @@ class MyScreen(Screen):
 
     @work(thread=True)
     def process(self):
-        self.pty = PtyProcessUnicode.spawn(
+        self.pty = PtyProcess.spawn(
             ["python", "-m", "Shinigami.main"],
-            cwd=Path(__file__).parent,
+            cwd=str(Path(__file__).parent),
             env=os.environ,
         )
         log = self.app.query_one("#log", expect_type=Log)
@@ -409,14 +420,17 @@ class MyScreen(Screen):
                 std = self.pty.read(1024)
                 log.write(ansi_escape.sub("", std))
             except EOFError:
-                self.pty = PtyProcessUnicode.spawn(
+                self.pty = PtyProcess.spawn(
                     ["python", "-m", "Shinigami.main"],
-                    cwd=Path(__file__).parent,
+                    cwd=str(Path(__file__).parent),
                     env=os.environ,
                 )
 
     def restart(self):
-        self.pty.kill(signal.SIGKILL)
+        if is_windows():
+            self.pty.terminate(True)
+        else:
+            self.pty.kill(signal.SIGKILL)
 
     def on_mount(self):
         self.watch_event = asyncio.Event()
@@ -437,7 +451,7 @@ class MyScreen(Screen):
 
 class Shinigami(App):
     DEFAULT_CSS = """
-    
+
     QuitScreen{
         align: center middle;
     }

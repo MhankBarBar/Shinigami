@@ -1,9 +1,10 @@
-from os import PathLike
+import json
 import os
+from os import PathLike
 from pathlib import Path
 from typing import Optional
-import json
-from .ipc import sgiapi
+
+from Shinigami.ipc import sgiapi
 
 SHINIGAMI = Path(__file__).parent
 
@@ -37,7 +38,7 @@ class ShinigamiConfig:
         if not os.path.exists(file_path):
             with open(file_path, "w") as file:
                 file.write("{}")
-        with open(file_path, "r") as file:
+        with open(file_path) as file:
             config = json.load(file)
             return cls(
                 config.get("session_name", "Shinigami.session"),

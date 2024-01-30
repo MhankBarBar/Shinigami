@@ -4,7 +4,8 @@ import string
 from abc import ABC
 from dataclasses import dataclass, field
 from pathlib import Path
-from ..ipc import sgiapi
+
+from Shinigami.ipc import sgiapi
 
 
 @dataclass

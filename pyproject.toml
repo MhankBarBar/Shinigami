@@ -8,10 +8,11 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = ">=3.10"
 textual = { version = "^0.47.1", python = ">=3.10,<4.0" }
-ptyprocess = "^0.7.0"
+ptyprocess = { version = "^0.7.0", platform = "linux" }
 watchfiles = "^0.21.0"
 neonize = "^0.0.4"
 python-magic-bin = { version = "^0.4.14", markers = "platform_system == 'Windows'" }
+pywinpty = { version = "^2.0.12", markers = "platform_system == 'Windows'" }
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.6.0"

@@ -18,4 +18,5 @@ ignore = [
     "E501",  # line too long, handled by black
     "B008",  # do not perform function calls in argument defaults
     "W191",  # indentation contains tabs
+    "UP007", # Use `X | Y` for type annotations
 ]

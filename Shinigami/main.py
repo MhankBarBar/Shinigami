@@ -1,4 +1,3 @@
-import json
 import logging
 import signal
 from datetime import datetime
@@ -6,12 +5,6 @@ from datetime import datetime
 from neonize.client import JID, NewClient
 from neonize.events import (
     CallOfferEv,
-    ConnectedEv,
-    MessageEv,
-    PairStatusEv,
-    event,
-    ReceiptEv,
-    HistorySyncEv,
     ConnectedEv,
     HistorySyncEv,
     MessageEv,
@@ -21,9 +14,10 @@ from neonize.events import (
 )
 from neonize.proto.def_pb2 import DeviceProps
 from neonize.utils import log  # , enum
-from .ipc import sgiapi
+
 from Shinigami.commands import CommandHandler, CommandLoader
 from Shinigami.config import Config
+from Shinigami.ipc import sgiapi
 from Shinigami.utils.message import SimplifiedMessage  # HistoryMessage
 
 command_handler = CommandHandler()
@@ -53,6 +47,7 @@ def on_connected(_: NewClient, __: ConnectedEv):
 
     def update_config(config: dict):
         Config.update_config(**config)
+
     sgiapi.set_handler("send_message", send_message)
     sgiapi.set_handler("update_config", update_config)
     sgiapi.start()

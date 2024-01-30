@@ -1,6 +1,7 @@
 from neonize.client import JID
-from . import BaseCommand
-from ..ipc import sgiapi
+
+from Shinigami.commands import BaseCommand
+from Shinigami.ipc import sgiapi
 
 
 class Restart(BaseCommand):
