@@ -1,6 +1,7 @@
 from Shinigami.commands import BaseCommand
 from Shinigami.utils.message import SimplifiedMessage
 from Shinigami.config import Config
+from Shinigami.utils.message import SimplifiedMessage
 
 
 class Sticker(BaseCommand):

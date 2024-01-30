@@ -13,11 +13,15 @@ watchfiles = "^0.21.0"
 neonize = "^0.0.4"
 python-magic-bin = { version = "^0.4.14", markers = "platform_system == 'Windows'" }
 
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.6.0"
+
+[tool.poetry.group.lint.dependencies]
+ruff = "0.1.15"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
 
 [tool.poetry.scripts]
 shinigami = "Shinigami.main:start"

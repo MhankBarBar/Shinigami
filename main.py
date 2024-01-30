@@ -361,6 +361,7 @@ class MyScreen(Screen):
 
             except Exception as e:
                 log.write_line(f"Disconnected: {e} ")
+                raise e
 
     def send_command(self, name: str, data: Optional[dict] = None):
         json_data = json.dumps(data or {}).encode()

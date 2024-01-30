@@ -1,5 +1,5 @@
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 from neonize.client import NewClient
 from neonize.proto import Neonize_pb2

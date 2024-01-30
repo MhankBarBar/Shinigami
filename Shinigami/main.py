@@ -5,13 +5,19 @@ from datetime import datetime
 
 from neonize.client import JID, NewClient
 from neonize.events import (
+    CallOfferEv,
     ConnectedEv,
     MessageEv,
     PairStatusEv,
     event,
     ReceiptEv,
     HistorySyncEv,
-    CallOfferEv,
+    ConnectedEv,
+    HistorySyncEv,
+    MessageEv,
+    PairStatusEv,
+    ReceiptEv,
+    event,
 )
 from neonize.proto.def_pb2 import DeviceProps
 from neonize.utils import log  # , enum
@@ -47,7 +53,6 @@ def on_connected(_: NewClient, __: ConnectedEv):
 
     def update_config(config: dict):
         Config.update_config(**config)
-
     sgiapi.set_handler("send_message", send_message)
     sgiapi.set_handler("update_config", update_config)
     sgiapi.start()
