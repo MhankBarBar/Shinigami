@@ -166,7 +166,7 @@ ActionButton {
             # self.app.push_screen(QuitScreen())
             event.button.label = "DEBUG: %s" % ["❌", "✅"][self.DEBUG]
         elif event.button.id == "restart":
-            self.app.restart()
+            self.screen.restart()
         elif event.button.id == "switch":
             # Not Implemented yet
             pass
@@ -319,7 +319,7 @@ class MyScreen(Screen):
         else:
             pass
 
-    @work(name="shinigami server", exclusive=True, thread=True)
+    @work(name="shinigami server", exclusive=True, thread=True, exit_on_error=True)
     def client(self, sock: socket.socket, addr):
         log = self.query_one("#log", expect_type=Log)
         hit = {}
@@ -361,7 +361,7 @@ class MyScreen(Screen):
 
             except Exception as e:
                 log.write_line(f"Disconnected: {e} ")
-                raise e
+                break
 
     def send_command(self, name: str, data: Optional[dict] = None):
         json_data = json.dumps(data or {}).encode()
