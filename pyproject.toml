@@ -1,14 +1,28 @@
 [tool.poetry]
-name = "wbot"
-version = "0.1.0"
+name = "shinigami"
+version = "0.0.1"
 description = "WhatsApp Bot"
 authors = ["MhankBarBar <mhankbarbar@pm.me>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = ">=3.10"
+textual = { version = "^0.47.1", python = ">=3.10,<4.0" }
+ptyprocess = { version = "^0.7.0", platform = "linux" }
+watchfiles = "^0.21.0"
+neonize = "^0.0.4"
+python-magic-bin = { version = "^0.4.14", markers = "platform_system == 'Windows'" }
+pywinpty = { version = "^2.0.12", markers = "platform_system == 'Windows'" }
 
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.6.0"
+
+[tool.poetry.group.lint.dependencies]
+ruff = "0.1.15"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+shinigami = "Shinigami.main:start"

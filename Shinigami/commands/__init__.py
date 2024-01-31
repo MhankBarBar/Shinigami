@@ -1,9 +1,11 @@
 import os
 import re
 import string
-from abc import ABC, abstractmethod
+from abc import ABC
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from Shinigami.ipc import sgiapi
 
 
 @dataclass
@@ -13,29 +15,29 @@ class BaseCommand(ABC):
     help: str
     alias: list = field(default_factory=list)
 
-    @abstractmethod
-    def callback(self):
-        ...
-
 
 class CommandHandler:
     def __init__(self):
-        self.command_pattern = re.compile(r'^([{}])\w+'.format(re.escape(string.punctuation)))
-        self.commands = {}
+        self.command_pattern = re.compile(rf"^([{re.escape(string.punctuation)}])\w+")
+        self.commands = []
 
     def add_command(self, command):
-        self.commands[command.command] = command
-        if getattr(command, "alias", None):
-            for alias in command.alias:
-                self.commands[alias] = command
+        self.commands.append(command)
 
     def handle_command(self, message, **opts):
-        match = self.command_pattern.match(message)
-        if match:
-            command_name = match.group().lstrip(string.punctuation)
-            if command_name in self.commands:
-                command = self.commands[command_name]
-                command.callback(**opts)
+        for command in self.commands:
+            if hasattr(command, "execute"):
+                command.execute(**opts)
+            elif match := self.command_pattern.match(message):
+                command_name = match.group().lstrip(string.punctuation)
+                if (
+                    hasattr(command, "alias")
+                    and command_name in command.alias
+                    or hasattr(command, "command")
+                    and command_name == command.command
+                ):
+                    command.call(**opts)
+                    sgiapi.send_commmand("hit", {"name": command.command})
 
     # def match_command(self, message, command_pattern) -> bool:
     #     match = re.match(fr"^{re.escape(string.punctuation)}{command_pattern}$", message, re.IGNORECASE)
@@ -50,20 +52,20 @@ class CommandLoader:
             return
 
         for filename in path.iterdir():
-            if filename.name.endswith('.py'):
+            if filename.name.endswith(".py"):
                 module_name = filename.name[:-3]
                 if module_name == "__init__":
                     continue
                 module = getattr(
                     getattr(
-                        __import__(f'{path.parent.name}.{path.name}.{module_name}'), path.name
+                        __import__(f"{path.parent.name}.{path.name}.{module_name}"),
+                        path.name,
                     ),
-                    module_name
+                    module_name,
                 )
                 for x in dir(module):
-                    if (hasattr(
-                            getattr(module, x),
-                            '__bases__'
-                    )) and BaseCommand in getattr(module, x).__bases__:
+                    if (
+                        hasattr(getattr(module, x), "__bases__")
+                    ) and BaseCommand in getattr(module, x).__bases__:
                         cmd: BaseCommand = getattr(module, x)
                         handler.add_command(cmd)
