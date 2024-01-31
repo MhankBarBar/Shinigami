@@ -36,5 +36,5 @@ class Sticker(BaseCommand):
                     Config.STICKER_NAME,
                     Config.STICKER_PACK,
                 )
-        else:
-            opts.get("c").reply_message("send/reply image/video", opts.get("m"))
+            else:
+                opts.get("c").reply_message("send/reply image/video", opts.get("m"))

@@ -5,7 +5,10 @@ from abc import ABC
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from Shinigami.ipc import sgiapi
+from Shinigami.utils import is_windows
+
+if not is_windows():
+    from Shinigami.ipc import sgiapi
 
 
 @dataclass
@@ -14,6 +17,7 @@ class BaseCommand(ABC):
     tags: str
     help: str
     alias: list = field(default_factory=list)
+    is_owner: bool = False
 
 
 class CommandHandler:
@@ -37,7 +41,8 @@ class CommandHandler:
                     and command_name == command.command
                 ):
                     command.call(**opts)
-                    sgiapi.send_commmand("hit", {"name": command.command})
+                    if not is_windows():
+                        sgiapi.send_commmand("hit", {"name": command.command})
 
     # def match_command(self, message, command_pattern) -> bool:
     #     match = re.match(fr"^{re.escape(string.punctuation)}{command_pattern}$", message, re.IGNORECASE)

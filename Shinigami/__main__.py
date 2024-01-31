@@ -17,8 +17,11 @@ from neonize.utils import log  # , enum
 
 from Shinigami.commands import CommandHandler, CommandLoader
 from Shinigami.config import Config
-from Shinigami.ipc import sgiapi
+from Shinigami.utils import is_windows
 from Shinigami.utils.message import SimplifiedMessage  # HistoryMessage
+
+if not is_windows():
+    from Shinigami.ipc import sgiapi
 
 command_handler = CommandHandler()
 CommandLoader.load_commands(command_handler)
@@ -40,17 +43,18 @@ client = NewClient(
 @client.event(ConnectedEv)
 def on_connected(_: NewClient, __: ConnectedEv):
     log.info("⚡ Connected")
-    Config.send_update_config()
+    if not is_windows():
+        Config.send_update_config()
 
-    def send_message(data: dict):
-        client.send_message(JID(**data["chat"]), data["message"])
+        def send_message(data: dict):
+            client.send_message(JID(**data["chat"]), data["message"])
 
-    def update_config(config: dict):
-        Config.update_config(**config)
+        def update_config(config: dict):
+            Config.update_config(**config)
 
-    sgiapi.set_handler("send_message", send_message)
-    sgiapi.set_handler("update_config", update_config)
-    sgiapi.start()
+        sgiapi.set_handler("send_message", send_message)
+        sgiapi.set_handler("update_config", update_config)
+        sgiapi.start()
 
 
 @client.event(ReceiptEv)
