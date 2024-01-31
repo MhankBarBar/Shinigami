@@ -1,5 +1,5 @@
 <div align="center">
-    <img src="./Shinigami/assets/logo.png" height="150px"  alt="logo"/>
+    <img src="./Shinigami/assets/logo.png" height="150px" alt="logo"/>
     <h2>Shinigami WhatsApp Bot [W.I.P]</h2>
 </div>
 
@@ -9,8 +9,8 @@
 poetry install
 ```
 
-<p>Then run this scirpt</p>
+<p>Then run this script</p>
 
 ```bash
-poetry run shinigami
+python main.py
 ```
