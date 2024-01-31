@@ -1,17 +1,10 @@
 import asyncio
 import json
-import signal
-import struct
-
-from Shinigami.utils import is_windows
-
-if is_windows():
-    from winpty import PtyProcess
-else:
-    from ptyprocess import PtyProcessUnicode as PtyProcess
 import os
 import re
+import signal
 import socket
+import struct
 from pathlib import Path
 from typing import Optional
 
@@ -37,6 +30,13 @@ from textual.widgets import (
     TabbedContent,
     TabPane,
 )
+
+from Shinigami.utils import is_windows
+
+if is_windows():
+    from winpty import PtyProcess
+else:
+    from ptyprocess import PtyProcessUnicode as PtyProcess
 
 WORKDIR = Path(__file__).parent
 SHINIGAMI = WORKDIR / "Shinigami/"
@@ -410,7 +410,7 @@ class MyScreen(Screen):
     @work(thread=True)
     def process(self):
         self.pty = PtyProcess.spawn(
-            ["python", "-m", "Shinigami.main"],
+            ["python", "-m", "Shinigami"],
             cwd=str(Path(__file__).parent),
             env=os.environ,
         )
@@ -421,7 +421,7 @@ class MyScreen(Screen):
                 log.write(ansi_escape.sub("", std))
             except EOFError:
                 self.pty = PtyProcess.spawn(
-                    ["python", "-m", "Shinigami.main"],
+                    ["python", "-m", "Shinigami"],
                     cwd=str(Path(__file__).parent),
                     env=os.environ,
                 )
