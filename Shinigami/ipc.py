@@ -7,16 +7,12 @@ from typing import Optional
 
 from neonize.utils import log
 
-from Shinigami.utils import is_windows
-
 
 class ShinigamiIPC:
     def __init__(self) -> None:
-        self.sock = socket.socket(
-            socket.AF_UNIX if not is_windows() else socket.AF_INET, socket.SOCK_STREAM
-        )
+        self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-        self.sock.connect(("127.0.0.1", 7657) if is_windows() else "listen.sock")
+        self.sock.connect("listen.sock")
         self.handler: dict[str, Callable[[dict]]] = {}
 
     def default_handler(self, arg: str):

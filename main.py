@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Optional
 
 import watchfiles
+from ptyprocess import PtyProcessUnicode as PtyProcess
 from rich.text import Text
 from textual import RenderableType, work
 from textual.app import App, ComposeResult
@@ -30,13 +31,6 @@ from textual.widgets import (
     TabbedContent,
     TabPane,
 )
-
-from Shinigami.utils import is_windows
-
-if is_windows():
-    from winpty import PtyProcess
-else:
-    from ptyprocess import PtyProcessUnicode as PtyProcess
 
 WORKDIR = Path(__file__).parent
 SHINIGAMI = WORKDIR / "Shinigami/"
@@ -346,10 +340,7 @@ class MyScreen(Screen):
                     case "restart":
                         log.write_line("Restarting....")
                         self.RESTARTED = data
-                        if is_windows():
-                            self.pty.terminate(True)
-                        else:
-                            self.pty.kill(signal.SIGKILL)
+                        self.pty.kill(signal.SIGKILL)
                         break
                     case "update_config":
                         for k, v in data.items():
@@ -396,11 +387,9 @@ class MyScreen(Screen):
 
     @work(thread=True, exclusive=True)
     def server(self):
-        sock_server = socket.socket(
-            socket.AF_UNIX if not is_windows() else socket.AF_INET, socket.SOCK_STREAM
-        )
+        sock_server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock_server.bind(("127.0.0.1", 7657) if is_windows() else "listen.sock")
+        sock_server.bind("listen.sock")
         sock_server.listen()
         while True:
             sock, addr = sock_server.accept()
@@ -427,10 +416,7 @@ class MyScreen(Screen):
                 )
 
     def restart(self):
-        if is_windows():
-            self.pty.terminate(True)
-        else:
-            self.pty.kill(signal.SIGKILL)
+        self.pty.kill(signal.SIGKILL)
 
     def on_mount(self):
         self.watch_event = asyncio.Event()
