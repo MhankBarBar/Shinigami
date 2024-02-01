@@ -10,18 +10,26 @@ from neonize.utils import log
 
 class ShinigamiIPC:
     def __init__(self) -> None:
-        self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-        self.sock.connect("listen.sock")
-        self.handler: dict[str, Callable[[dict]]] = {}
+        try:
+            self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            self.sock.connect("listen.sock")
+            self.handler: dict[str, Callable[[dict]]] = {}
+        except Exception:
+            log.warn(f"IPC Unavailable in this process")
+            self.sock.close()
 
     def default_handler(self, arg: str):
         log.debug(arg)
-
+    @property
+    def closed(self) -> bool:
+        return self.sock._closed  # type: ignore
     def on_message(self, command: str, data: bytes):
         f = self.handler.get(command)
         data_json = json.loads(data)
-        if f:
+        if self.closed:
+            pass
+        elif f:
             f(data_json)
             log.debug(command, data_json)
 
@@ -33,6 +41,8 @@ class ShinigamiIPC:
 
     def get_data(self):
         while True:
+            if self.closed:
+                break
             command_size = self.sock.recv(4)
             command = self.sock.recv(struct.unpack("i", command_size)[0])
             data_size = self.sock.recv(4)

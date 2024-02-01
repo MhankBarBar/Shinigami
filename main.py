@@ -426,9 +426,6 @@ class MyScreen(Screen):
         self.process()
 
     def compose(self) -> ComposeResult:
-        hit = Hit()
-        hit.hit_name = "krypton"
-        hit.hit_value = 100
         yield Header(True)
         yield ListView(id="listview_hit")
         yield Session()

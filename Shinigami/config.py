@@ -3,15 +3,11 @@ import os
 from os import PathLike
 from pathlib import Path
 from typing import Optional
-
-from Shinigami.utils import is_windows
-
-if not is_windows():
-    from Shinigami.ipc import sgiapi
+from Shinigami.ipc import sgiapi
 
 SHINIGAMI = Path(__file__).parent
 
-
+CHILD = bool(os.environ.get('debug'))
 class ShinigamiConfig:
     SESSION_DIR = SHINIGAMI / "session"
     CONFIG_FILE = SHINIGAMI / "config.json"
