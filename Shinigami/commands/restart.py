@@ -4,7 +4,10 @@ import sys
 from neonize.client import JID
 
 from Shinigami.commands import BaseCommand
-from Shinigami.ipc import sgiapi
+from Shinigami.utils import is_windows
+
+if not is_windows():
+    from Shinigami.ipc import sgiapi
 
 
 class Restart(BaseCommand):
@@ -14,7 +17,7 @@ class Restart(BaseCommand):
     @staticmethod
     def call(**opts):
         opts.get("c").reply_message("Restarting...!", opts.get("m"))
-        if not sgiapi.closed:
+        if not is_windows():
             chat: JID = opts.get("m").Info.MessageSource.Chat
             sgiapi.send_commmand(
                 "restart",

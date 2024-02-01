@@ -16,14 +16,16 @@ class ShinigamiIPC:
             self.sock.connect("listen.sock")
             self.handler: dict[str, Callable[[dict]]] = {}
         except Exception:
-            log.warn(f"IPC Unavailable in this process")
+            log.warn("IPC Unavailable in this process")
             self.sock.close()
 
     def default_handler(self, arg: str):
         log.debug(arg)
+
     @property
     def closed(self) -> bool:
         return self.sock._closed  # type: ignore
+
     def on_message(self, command: str, data: bytes):
         f = self.handler.get(command)
         data_json = json.loads(data)

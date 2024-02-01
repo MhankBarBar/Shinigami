@@ -9,9 +9,13 @@ readme = "README.md"
 python = ">=3.10"
 textual = { version = "^0.47.1", python = ">=3.10,<4.0", platform = "linux" }
 ptyprocess = { version = "^0.7.0", platform = "linux" }
-watchfiles = { version = "^0.21.0", platform = "linux" }
+watchfiles = "^0.21.0"
 neonize = "^0.0.4"
 python-magic-bin = { version = "^0.4.14", markers = "platform_system == 'Windows'" }
+pywinpty = { version = "^2.0.12", markers = "platform_system == 'Windows'" }
+characterai = "^0.8.0"
+typing-extensions = "^4.9.0"
+websockets = "^12.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.6.0"

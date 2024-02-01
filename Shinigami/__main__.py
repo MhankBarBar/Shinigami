@@ -1,7 +1,7 @@
 import logging
 import signal
 from datetime import datetime
-import sys
+
 from neonize.client import JID, NewClient
 from neonize.events import (
     CallOfferEv,
@@ -20,7 +20,9 @@ from Shinigami.config import Config
 from Shinigami.utils import is_windows
 from Shinigami.utils.message import SimplifiedMessage  # HistoryMessage
 
-from Shinigami.ipc import sgiapi
+if not is_windows():
+    from Shinigami.ipc import sgiapi
+
 command_handler = CommandHandler()
 CommandLoader.load_commands(command_handler)
 
@@ -41,7 +43,7 @@ client = NewClient(
 @client.event(ConnectedEv)
 def on_connected(_: NewClient, __: ConnectedEv):
     log.info("⚡ Connected")
-    if not sgiapi.closed:
+    if not is_windows():
         Config.send_update_config()
 
         def send_message(data: dict):

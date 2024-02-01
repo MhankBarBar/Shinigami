@@ -4,5 +4,7 @@
     "sticker_pack": "Bot",
     "bot_name": "Shinigami",
     "prefix": ".",
-    "owner": "6281234567890"
+    "owner": "6281234567890",
+    "characterai_token": "",
+    "characterai_character": ""
 }
