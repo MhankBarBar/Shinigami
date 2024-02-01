@@ -81,7 +81,7 @@ class SimplifiedMessage:
     def extract_text(self) -> str:
         message_type = self.message.Info.Type
         media_type = self.message.Info.MediaType if message_type == "media" else None
-        if message_type == "text":
+        if message_type == "text" or media_type == "url":
             return (
                 self.message.Message.conversation
                 or self.message.Message.extendedTextMessage.text
@@ -151,7 +151,7 @@ class SimplifiedMessage:
 
     def extract_quoted_message(self) -> QuotedMessage | None:
         smsg = self.simplified()
-        if smsg.message_type == "text":
+        if smsg.message_type == "text" or smsg.media_type == "url":
             if self.message.Message.HasField("extendedTextMessage"):
                 return self.__extract_quoted_from_context_info(
                     self.message.Message.extendedTextMessage
@@ -191,7 +191,7 @@ class SimplifiedMessage:
         smsg = self.simplified()
         msg = self.message.Message
         mentions = []
-        if smsg.message_type == "text":
+        if smsg.message_type == "text" or smsg.media_type == "url":
             if msg.HasField("extendedTextMessage") and msg.extendedTextMessage.HasField(
                 "contextInfo"
             ):

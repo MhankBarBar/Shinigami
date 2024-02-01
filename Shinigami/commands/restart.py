@@ -17,20 +17,20 @@ class Restart(BaseCommand):
     @staticmethod
     def call(**opts):
         opts.get("c").reply_message("Restarting...!", opts.get("m"))
-        if is_windows():
+        if not is_windows():
+            chat: JID = opts.get("m").Info.MessageSource.Chat
+            sgiapi.send_commmand(
+                "restart",
+                {
+                    "chat": {
+                        "User": chat.User,
+                        "Server": chat.Server,
+                        "RawAgent": chat.RawAgent,
+                        "Device": chat.Device,
+                        "Integrator": chat.Integrator,
+                        "IsEmpty": chat.IsEmpty,
+                    }
+                },
+            )
+        else:
             os.execl(sys.executable, sys.executable, *sys.argv)
-
-        chat: JID = opts.get("m").Info.MessageSource.Chat
-        sgiapi.send_commmand(
-            "restart",
-            {
-                "chat": {
-                    "User": chat.User,
-                    "Server": chat.Server,
-                    "RawAgent": chat.RawAgent,
-                    "Device": chat.Device,
-                    "Integrator": chat.Integrator,
-                    "IsEmpty": chat.IsEmpty,
-                }
-            },
-        )
