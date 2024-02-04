@@ -6,6 +6,5 @@ class Help(BaseCommand):
     alias = ["h"]
 
     @staticmethod
-    def call(**opts):
-        c = opts.get("c")
-        c.reply_message("Help", opts.get("m"))
+    def call(c, m, i18n, **_):
+        c.reply_message(i18n["cmd"]["help"].strip(), m)

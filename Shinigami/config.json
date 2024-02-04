@@ -6,5 +6,6 @@
     "prefix": ".",
     "owner": "6281234567890",
     "characterai_token": "",
-    "characterai_character": ""
+    "characterai_character": "",
+    "language": "en"
 }

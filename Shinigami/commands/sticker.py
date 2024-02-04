@@ -8,33 +8,32 @@ class Sticker(BaseCommand):
     alias = ["s", "stiker"]
 
     @staticmethod
-    def call(**opts):
-        message = opts.get("sm")
-        media_type = message.media_type
+    def call(c, sm, m, i18n, **_):
+        media_type = sm.media_type
 
         if (
-            message.message_type == "text"
-            or message.is_media
+            sm.message_type == "text"
+            or sm.is_media
             and media_type in ("image", "video")
         ):
-            media_message = x if (x := message.quoted_message()) else message
+            media_message = x if (x := sm.quoted_message()) else sm
             if (
                 media_message.media_type == "video"
                 and media_message.raw_message.videoMessage.seconds > 10
             ):
-                opts.get("c").reply_message("video too long", opts.get("m"))
+                c.reply_message(i18n["error"]["sticker"]["too_long"], m)
                 return
             if media_message.is_media and media_message.media_type in (
                 "image",
                 "video",
             ):
-                b = opts.get("c").download_any(media_message.raw_message)
-                opts.get("c").send_sticker(
-                    SimplifiedMessage.string_to_jid(message.chat),
+                b = c.download_any(media_message.raw_message)
+                c.send_sticker(
+                    SimplifiedMessage.string_to_jid(sm.chat),
                     b,
-                    opts.get("m"),
+                    m,
                     Config.STICKER_NAME,
                     Config.STICKER_PACK,
                 )
             else:
-                opts.get("c").reply_message("send/reply image/video", opts.get("m"))
+                c.reply_message(i18n["error"]["sticker"]["no_media"], m)
