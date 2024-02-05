@@ -1,6 +1,6 @@
 <div align="center">
     <img src="./Shinigami/assets/logo.png" height="200px" alt="Shinigami Logo"/>
-    <h2>Shinigami WhatsApp Bot [Work in Progress]</h2>
+    <h1>Shinigami WhatsApp Bot [Work in Progress]</h1>
 </div>
 
 ## Requirements
@@ -19,6 +19,9 @@ choco install ffmpeg-full :: using chocolatey
 ```bash
 poetry install
 ```
+
+> [!NOTE]
+> Sadly, on Windows, you need to configure the bot settings manually in `Shinigami/config.json`. <br>
 
 ## Run Shinigami
 
@@ -40,8 +43,8 @@ python main-win.py # if you're using Windows
 - How to obtain characterai character
   > - Open [character.ai](https://beta.character.ai).
   > - Select the desired character.
-  > - Copy the value of the char parameter from the URL.
-  > - Example URL: https://beta.character.ai/chat?char=NO8kNTeOovRCzsjECiz8GEOGSx-YiCwoTK2-SA1rWLU&source=recent-chats.
+  > - Copy the value of the `char` parameter from the URL.
+  > - Example URL: `https://beta.character.ai/chat?char=NO8kNTeOovRCzsjECiz8GEOGSx-YiCwoTK2-SA1rWLU&source=recent-chats`.
   > - Copy `NO8kNTeOovRCzsjECiz8GEOGSx-YiCwoTK2-SA1rWLU`.
 
 ## Contributing
