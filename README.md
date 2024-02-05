@@ -7,43 +7,43 @@
 - Python 3.10+
 - Ffmpeg
 
-## Install on Windows (using winget)
-```powershell
-winget install Gyan.FFmpeg
-```
-## or using chocolatey
-```powershell
-choco install ffmpeg-full
+## Install Ffmpeg on Windows
+
+```cmd
+winget install Gyan.FFmpeg :: using winget
+choco install ffmpeg-full :: using chocolatey
 ```
 
 ## Install Dependencies
+
 ```bash
 poetry install
 ```
 
-## Run on Linux
+## Run Shinigami
+
 ```bash
-python main.py
+python main.py # if you're using Linux
+python main-win.py # if you're using Windows
 ```
 
-## Run on Windows
-```powershell
-python main-win.py
-```
+> [!NOTE]
+> The difference in command execution between Windows and Linux is due to Windows not supporting certain dependencies.
 
-## How to Obtain Characterai Token and Characterai Character
-### Token Retrieval:
-- Register on [character.ai](https://beta.character.ai).
-- Open DevTools in your browser.
-- Navigate to Storage -> Local Storage -> char_token.
-- Copy the `value`.
+## FAQ
 
-### Character Retrieval:
-- Open [character.ai](https://beta.character.ai).
-- Select the desired character.
-- Copy the value of the char parameter from the URL.
-- Example URL: https://beta.character.ai/chat?char=NO8kNTeOovRCzsjECiz8GEOGSx-YiCwoTK2-SA1rWLU&source=recent-chats.
-- Copy `NO8kNTeOovRCzsjECiz8GEOGSx-YiCwoTK2-SA1rWLU.`
+- How to obtain characterai token?
+  > - Register on [character.ai](https://beta.character.ai).
+  > - Open DevTools in your browser.
+  > - Navigate to Storage -> Local Storage -> char_token.
+  > - Copy the `value`.
+- How to obtain characterai character
+  > - Open [character.ai](https://beta.character.ai).
+  > - Select the desired character.
+  > - Copy the value of the char parameter from the URL.
+  > - Example URL: https://beta.character.ai/chat?char=NO8kNTeOovRCzsjECiz8GEOGSx-YiCwoTK2-SA1rWLU&source=recent-chats.
+  > - Copy `NO8kNTeOovRCzsjECiz8GEOGSx-YiCwoTK2-SA1rWLU`.
 
-## Note
-The difference in command execution between Windows and Linux is due to Windows not supporting certain dependencies.
+## Contributing
+
+Feel free to contribute to this project if you have any further ideas.
