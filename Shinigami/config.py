@@ -28,6 +28,7 @@ class ShinigamiConfig:
         owner: str,
         characterai_token: str,
         characterai_character: str,
+        language: str,
         config_file: Optional[PathLike],
     ) -> None:
         self.__SESSION_NAME = session_name
@@ -38,6 +39,7 @@ class ShinigamiConfig:
         self.__BOT_NAME = bot_name
         self.__CHARACTERAI_TOKEN = characterai_token
         self.__CHARACTERAI_CHARACTER = characterai_character
+        self.__LANGUAGE = language
         if config_file:
             self.CONFIG_FILE = config_file
 
@@ -58,6 +60,7 @@ class ShinigamiConfig:
                 config.get("owner", "6281234567890"),
                 config.get("characterai_token", ""),
                 config.get("characterai_character", ""),
+                config.get("language", "en"),
                 config_file,
             )
 
@@ -73,6 +76,7 @@ class ShinigamiConfig:
                 "owner": self.OWNER,
                 "characterai_token": self.CHARACTERAI_TOKEN,
                 "characterai_character": self.CHARACTERAI_CHARACTER,
+                "language": self.LANGUAGE,
             },
         )
 
@@ -86,6 +90,7 @@ class ShinigamiConfig:
         owner: Optional[str] = None,
         characterai_token: Optional[str] = None,
         characterai_character: Optional[str] = None,
+        language: Optional[str] = None,
     ):
         with open(self.CONFIG_FILE, "w") as file:
             if sticker_pack:
@@ -104,6 +109,8 @@ class ShinigamiConfig:
                 self.__CHARACTERAI_TOKEN = characterai_token
             if characterai_character:
                 self.__CHARACTERAI_CHARACTER = characterai_character
+            if language:
+                self.__LANGUAGE = language
             file.write(
                 json.dumps(
                     {
@@ -115,6 +122,7 @@ class ShinigamiConfig:
                         "owner": self.OWNER,
                         "characterai_token": self.CHARACTERAI_TOKEN,
                         "characterai_character": self.CHARACTERAI_CHARACTER,
+                        "language": self.LANGUAGE,
                     },
                     indent=4,
                 )
@@ -191,6 +199,15 @@ class ShinigamiConfig:
     @CHARACTERAI_CHARACTER.setter
     def CHARACTERAI_CHARACTER(self, value: str):
         self.__CHARACTERAI_CHARACTER = value
+        self.update_config()
+
+    @property
+    def LANGUAGE(self):
+        return self.__LANGUAGE
+
+    @LANGUAGE.setter
+    def LANGUAGE(self, value: str):
+        self.__LANGUAGE = value
         self.update_config()
 
 

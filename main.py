@@ -136,6 +136,11 @@ ActionButton {
                     yield Input(placeholder="Session Name", id="session_name")
                     yield Input(placeholder="Sticker Name", id="sticker_name")
                     yield Input(placeholder="Sticker Pack", id="sticker_pack")
+                    yield Input(placeholder="CharacterAI Token", id="characterai_token")
+                    yield Input(
+                        placeholder="CharacterAI Character", id="characterai_character"
+                    )
+                    yield Input(placeholder="Language", id="language")
                     yield Button("Apply", id="apply_config", variant="success")
             with TabPane("Session"):
                 with VerticalScroll():
@@ -186,6 +191,13 @@ ActionButton {
                     "sticker_pack": self.query_one(
                         "#sticker_pack", expect_type=Input
                     ).value,
+                    "characterai_token": self.query_one(
+                        "#characterai_token", expect_type=Input
+                    ).value,
+                    "characterai_character": self.query_one(
+                        "#characterai_character", expect_type=Input
+                    ),
+                    "language": self.query_one("#language", expect_type=Input).value,
                 },
             )
         elif event.button.id == "selete_session_submit":

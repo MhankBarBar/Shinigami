@@ -1,0 +1,22 @@
+language_name: Indonesia
+cmd:
+  help: |
+    Daftar perintah yang ada.
+
+    - @ai | @mention - Tanya AI
+    - /stiker - Buat stiker
+    - /ping - Pong!
+  ai: Halo! Ada yang bisa saya bantu?
+  set_lang:
+    success: "Bahasa diganti ke: *%s*"
+error:
+  sticker:
+    too_long: Durasi video terlalu panjang
+    no_media: Kirim atau balas sebuah gambar atau video
+  set_lang:
+    invalid: "Bahasa tidak valid, bahasa yang tersedia adalah: \n- %s"
+helper:
+  set_lang: /setlang [bahasa]
+main:
+  on_message: "%s - Pesan dari %s : %s - %s"
+  on_call_offer: Maaf saya adalah bot dan saya tidak menerima panggilan

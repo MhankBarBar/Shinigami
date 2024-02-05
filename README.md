@@ -1,35 +1,52 @@
 <div align="center">
-    <img src="./Shinigami/assets/logo.png" height="150px" alt="logo"/>
-    <h2>Shinigami WhatsApp Bot [W.I.P]</h2>
+    <img src="./Shinigami/assets/logo.png" height="200px" alt="Shinigami Logo"/>
+    <h1>Shinigami WhatsApp Bot [Work in Progress]</h1>
 </div>
 
-<p>Install dependencies</p>
+## Requirements
+- Python 3.10+
+- Ffmpeg
+
+## Install Ffmpeg on Windows
+
+```cmd
+winget install Gyan.FFmpeg :: using winget
+choco install ffmpeg-full :: using chocolatey
+```
+
+## Install Dependencies
 
 ```bash
 poetry install
 ```
 
-<p>Then run this script on Linux</p>
+> [!NOTE]
+> Sadly, on Windows, you need to configure the bot settings manually in `Shinigami/config.json`. <br>
+
+## Run Shinigami
 
 ```bash
-python main.py
+python main.py # if you're using Linux
+python main-win.py # if you're using Windows
 ```
 
-<p>Or on Windows</p>
+> [!NOTE]
+> The difference in command execution between Windows and Linux is due to Windows not supporting certain dependencies.
 
-```bash
-python main-win.py
-```
+## FAQ
 
-<h3>How to get characterai token and characterai character?</h3>
-<h4>To get token you need to register on <a href="https://beta.character.ai">character.ai</a> then</h4>
-<li>Open DevTools in your browser</li>
-<li>Go to Storage -> Local Storage -> char_token</li>
-<li>Copy <code>value</code></li>
+- How to obtain characterai token?
+  > - Register on [character.ai](https://beta.character.ai).
+  > - Open DevTools in your browser.
+  > - Navigate to Storage -> Local Storage -> char_token.
+  > - Copy the `value`.
+- How to obtain characterai character
+  > - Open [character.ai](https://beta.character.ai).
+  > - Select the desired character.
+  > - Copy the value of the `char` parameter from the URL.
+  > - Example URL: `https://beta.character.ai/chat?char=NO8kNTeOovRCzsjECiz8GEOGSx-YiCwoTK2-SA1rWLU&source=recent-chats`.
+  > - Copy `NO8kNTeOovRCzsjECiz8GEOGSx-YiCwoTK2-SA1rWLU`.
 
-<h4>How about character?</h4>
-<p>Open <a href="https://beta.character.ai">character.ai</a> then select character you want, after that copy value of char parameter on url</p>
-<p>Example: https://beta.character.ai/chat?char=NO8kNTeOovRCzsjECiz8GEOGSx-YiCwoTK2-SA1rWLU&source=recent-chats</p>
-<p>Copy <code>NO8kNTeOovRCzsjECiz8GEOGSx-YiCwoTK2-SA1rWLU</code></p>
+## Contributing
 
-<h3>Note: Why the command run on Windows is different from Linux? That's because Windows doesn't support several dependencies.</h3>
+Feel free to contribute to this project if you have any further ideas.

@@ -17,6 +17,7 @@ from neonize.utils import log  # , enum
 
 from Shinigami.commands import CommandHandler, CommandLoader
 from Shinigami.config import Config
+from Shinigami.locales import i18n
 from Shinigami.utils import is_windows
 from Shinigami.utils.message import SimplifiedMessage  # HistoryMessage
 
@@ -38,6 +39,7 @@ client = NewClient(
     str(Config.SESSION_DIR / Config.SESSION_NAME),
     DeviceProps(requireFullSync=True, os="Shinigami", platformType=DeviceProps.WEAR_OS),
 )
+_i18n = i18n(Config.LANGUAGE)
 
 
 @client.event(ConnectedEv)
@@ -71,22 +73,32 @@ def on_history_sync(_: NewClient, history_sync: HistorySyncEv):
 @client.event(CallOfferEv)
 def on_call_offer(_: NewClient, call_offer: CallOfferEv):
     log.debug(f"CallOffer: {call_offer}")
-    _.send_message(
-        call_offer.basicCallMeta.callCreator, "I'm a bot and I don't accept calls"
-    )
+    _.send_message(call_offer.basicCallMeta.callCreator, _i18n["main"]["on_call_offer"])
     # _.update_blocklist(call_offer.basicCallMeta.callCreator, enum.BlocklistAction.BLOCK)  # block contact caller
 
 
 @client.event(MessageEv)
 def on_message(c: NewClient, message: MessageEv):
+    global _i18n
+    _i18n = i18n(Config.LANGUAGE)
     smsg = SimplifiedMessage(c, message).simplified()
     if message.Info.Category == "peer" or smsg.chat == "status@broadcast":
         return
     time = datetime.fromtimestamp(int(str(smsg.timestamp)[:-3])).strftime(
         "%Y-%m-%d %H:%M:%S"
     )
-    print(f"{time} - Message from {smsg.pushname} : {smsg.text} - {smsg.message_type}")
-    command_handler.handle_command(smsg.text, c=c, m=message, sm=smsg)
+    print(
+        _i18n["main"]["on_message"].strip()
+        % (time, smsg.pushname, smsg.text, smsg.message_type)
+    )
+    command_handler.handle_command(
+        smsg.text,
+        c=c,
+        m=message,
+        sm=smsg,
+        i18n=_i18n,
+        args=smsg.text.split(" ") if smsg.text else [],
+    )
 
 
 @client.event(PairStatusEv)
