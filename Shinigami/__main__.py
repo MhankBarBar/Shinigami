@@ -14,6 +14,8 @@ from neonize.events import (
 )
 from neonize.proto.def_pb2 import DeviceProps
 from neonize.utils import log  # , enum
+from yaspin import yaspin
+from yaspin.spinners import Spinners
 
 from Shinigami.commands import CommandHandler, CommandLoader
 from Shinigami.config import Config
@@ -32,7 +34,7 @@ def interrupted(*_):
     event.set()
 
 
-log.setLevel(logging.INFO)
+log.setLevel(logging.ERROR)
 signal.signal(signal.SIGINT, interrupted)
 
 client = NewClient(
@@ -44,7 +46,9 @@ _i18n = i18n(Config.LANGUAGE)
 
 @client.event(ConnectedEv)
 def on_connected(_: NewClient, __: ConnectedEv):
-    log.info("⚡ Connected")
+    # setattr(builtins, "shinigami", client)
+    spinner.text = "Connected"
+    spinner.ok("⚡ ")
     if not is_windows():
         Config.send_update_config()
 
@@ -88,8 +92,9 @@ def on_message(c: NewClient, message: MessageEv):
         "%Y-%m-%d %H:%M:%S"
     )
     print(
-        _i18n["main"]["on_message"].strip()
-        % (time, smsg.pushname, smsg.text, smsg.message_type)
+        _i18n["main"]["on_message"].format(
+            time=time, pushname=smsg.pushname, msg=smsg.text, type=smsg.message_type
+        )
     )
     command_handler.handle_command(
         smsg.text,
@@ -111,4 +116,5 @@ def start():
 
 
 if __name__ == "__main__":
-    start()
+    with yaspin(Spinners.orangePulse, text="Connecting") as spinner:
+        start()

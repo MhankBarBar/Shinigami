@@ -56,7 +56,7 @@ class ShinigamiConfig:
                 config.get("sticker_name", "Shinigami"),
                 config.get("sticker_pack", "Bot"),
                 config.get("bot_name", "Shinigami"),
-                config.get("perfix", "."),
+                config.get("prefix", "/"),
                 config.get("owner", "6281234567890"),
                 config.get("characterai_token", ""),
                 config.get("characterai_character", ""),

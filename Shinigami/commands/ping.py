@@ -5,5 +5,5 @@ class Ping(BaseCommand):
     command = "ping"
 
     @staticmethod
-    def call(**opts):
-        opts.get("c").reply_message("PonG!", opts.get("m"))
+    def call(c, m, **_):
+        c.reply_message("PonG!", m)

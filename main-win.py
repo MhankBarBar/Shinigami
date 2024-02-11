@@ -14,7 +14,10 @@ class PtyProcess:
         self.command = command
         os.environ.update({"debug": "1"})
         self.pty = PtyProcessUnicode.spawn(
-            command, cwd=os.path.dirname(__file__), env=os.environ
+            command,
+            cwd=os.path.dirname(__file__),
+            env=os.environ,
+            dimensions=os.get_terminal_size()[::-1],
         )
 
     def on_message(self, m: bytes):
@@ -46,6 +49,8 @@ async def main(event: asyncio.Event):
     async for _ in watchfiles.awatch(
         os.path.dirname(__file__), watch_filter=file_filter, stop_event=event
     ):
+        # x = _.pop()
+        # print(x[0], x[1])
         p.kill()
         p = create_pty()
     p.kill()
