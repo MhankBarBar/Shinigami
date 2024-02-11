@@ -7,7 +7,7 @@ from neonize.proto.def_pb2 import Message as RawMessage
 from neonize.utils.jid import Jid2String, JIDToNonAD
 
 
-@dataclass
+@dataclass(slots=True)
 class QuotedMessage:
     chat: str
     pushname: str
@@ -20,7 +20,7 @@ class QuotedMessage:
     raw_message: RawMessage
 
 
-@dataclass
+@dataclass(slots=True)
 class Message:
     chat: str
     pushname: str

@@ -5,6 +5,7 @@ from abc import ABC
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from Shinigami.config import Config
 from Shinigami.utils import is_windows
 
 if not is_windows():
@@ -19,10 +20,14 @@ class BaseCommand(ABC):
     alias: list = field(default_factory=list)
     is_owner: bool = False
 
+    def get_help(self, c, m):
+        return c.reply_message(self.help, m)
+
 
 class CommandHandler:
     def __init__(self):
-        self.command_pattern = re.compile(rf"^([{re.escape(string.punctuation)}])\w+")
+        self.prefix = Config.PREFIX if Config.PREFIX else re.escape(string.punctuation)
+        self.command_pattern = re.compile(rf"^([{self.prefix}])\w+")
         self.commands = []
 
     def add_command(self, command):
@@ -53,8 +58,9 @@ class CommandLoader:
     @staticmethod
     def load_commands(handler, path: Path = Path(__file__).parent.parent / "commands"):
         if not os.path.exists(path.parent.name):
-            print(f"Error: The '{path.parent.name}' directory does not exist.")
-            return
+            raise Exception(
+                f"Error: The '{path.parent.name}' directory does not exist."
+            )
 
         for filename in path.iterdir():
             if filename.name.endswith(".py"):

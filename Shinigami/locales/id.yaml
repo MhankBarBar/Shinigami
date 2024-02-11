@@ -15,8 +15,10 @@ error:
     no_media: Kirim atau balas sebuah gambar atau video
   set_lang:
     invalid: "Bahasa tidak valid, bahasa yang tersedia adalah: \n- %s"
+  transcribe:
+    no_media: Kirim atau balas audio
 helper:
   set_lang: /setlang [bahasa]
 main:
-  on_message: "%s - Pesan dari %s : %s - %s"
+  on_message: "{time} - Pesan dari {pushname} : {msg} - {type}"
   on_call_offer: Maaf saya adalah bot dan saya tidak menerima panggilan

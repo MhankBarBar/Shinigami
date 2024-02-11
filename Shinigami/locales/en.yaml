@@ -15,8 +15,10 @@ error:
     no_media: Send or reply a image or video
   set_lang:
     invalid: "Invalid language, available languages are: \n- %s"
+  transcribe:
+    no_media: Send or Reply audio file
 helper:
   set_lang: /setlang [language code]
 main:
-  on_message: "%s - Message from %s : %s - %s"
+  on_message: "{time} - Message from {pushname} : {msg} - {type}"
   on_call_offer: Sorry, I'm a bot and I don't accept calls
